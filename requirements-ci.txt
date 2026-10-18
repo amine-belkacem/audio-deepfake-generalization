@@ -1,4 +1,12 @@
-# Minimal set for the unit tests. They run on synthetic data, so no PyTorch here.
+# Dependencies for the unit tests. They run on synthetic audio, never on ASVspoof.
+# CPU-only PyTorch wheels keep the CI install small.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch
+torchaudio
 numpy
+scipy
 pandas
+scikit-learn
+soundfile
+tqdm
 pytest
