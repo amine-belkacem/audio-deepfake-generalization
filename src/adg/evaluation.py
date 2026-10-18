@@ -47,7 +47,8 @@ def join_scores(scores: pd.DataFrame, protocol: pd.DataFrame) -> pd.DataFrame:
     return merged
 
 
-def evaluate(merged: pd.DataFrame, asv: AsvErrorRates, n_boot: int = 1000, seed: int = 0) -> pd.DataFrame:
+def evaluate(merged: pd.DataFrame, asv: AsvErrorRates, n_boot: int = 1000, seed: int = 0,
+             per_attack: bool = True) -> pd.DataFrame:
     """One row per condition: all trials, known attacks, unknown attacks, each attack.
 
     For a subset, the bona fide trials are always all of them; only the spoof
@@ -59,8 +60,9 @@ def evaluate(merged: pd.DataFrame, asv: AsvErrorRates, n_boot: int = 1000, seed:
     groups = {"pooled": spoof,
               "known (A16, A19)": spoof[spoof["attack"].isin(KNOWN_EVAL_ATTACKS)],
               "unknown (11 attacks)": spoof[spoof["attack"].isin(UNKNOWN_EVAL_ATTACKS)]}
-    for attack in sorted(spoof["attack"].unique()):
-        groups[attack] = spoof[spoof["attack"] == attack]
+    if per_attack:
+        for attack in sorted(spoof["attack"].unique()):
+            groups[attack] = spoof[spoof["attack"] == attack]
 
     rows = []
     for name, sub in groups.items():
