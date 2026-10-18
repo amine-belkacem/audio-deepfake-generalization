@@ -2,13 +2,14 @@
 
 Stages (each one is skipped if its output already exists, so the script can be
 re-run after an interruption):
-    1. LFCC extraction for train and eval        -> features/lfcc/<partition>/
-    2. one 512-component GMM per class on train  -> results/lfcc_gmm/gmm_{bona,spoof}.npz
-    3. eval scores                               -> results/lfcc_gmm/scores_eval.csv
-    4. metrics                                   -> results/lfcc_gmm/metrics_eval.csv
+    1. LFCC extraction for train and eval        -> features/lfcc_<preset>/<partition>/
+    2. one 512-component GMM per class on train  -> results/lfcc_gmm_<preset>/gmm_{bona,spoof}.npz
+    3. eval scores                               -> results/lfcc_gmm_<preset>/scores_eval.csv
+    4. metrics                                   -> results/lfcc_gmm_<preset>/metrics_eval.csv
 
 Usage:
-    python scripts/run_lfcc_gmm.py --la-root data/LA
+    python scripts/run_lfcc_gmm.py --preset asvspoof2019_b02 --em-iter 20
+    python scripts/run_lfcc_gmm.py --preset first_run --em-iter 10   # first attempt, kept for the record
 """
 
 from __future__ import annotations
@@ -27,7 +28,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from adg.evaluation import evaluate, join_scores, load_asv_rates  # noqa: E402
-from adg.features import LfccExtractor, extract_partition, open_partition  # noqa: E402
+from adg.features import PRESETS, LfccExtractor, default_workers, extract_partition, open_partition  # noqa: E402
 from adg.gmm import DiagGMM, fit_gmm, utterance_llr  # noqa: E402
 from adg.protocols import check_counts, load_partition  # noqa: E402
 
@@ -48,13 +49,15 @@ def class_frames(frames: np.ndarray, index: pd.DataFrame, utt_ids: set[str]) -> 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--la-root", type=Path, default=Path("data/LA"))
-    ap.add_argument("--feat-dir", type=Path, default=Path("features/lfcc"))
-    ap.add_argument("--out", type=Path, default=Path("results/lfcc_gmm"))
+    ap.add_argument("--preset", choices=sorted(PRESETS), default="asvspoof2019_b02")
     ap.add_argument("--components", type=int, default=512)
-    ap.add_argument("--em-iter", type=int, default=10)
+    ap.add_argument("--em-iter", type=int, default=20, help="20 in the official baseline")
+    ap.add_argument("--workers", type=int, default=default_workers())
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--n-boot", type=int, default=1000)
     args = ap.parse_args()
+    args.feat_dir = Path("features") / f"lfcc_{args.preset}"
+    args.out = Path("results") / f"lfcc_gmm_{args.preset}"
 
     args.out.mkdir(parents=True, exist_ok=True)
     proto_dir = args.la_root / "ASVspoof2019_LA_cm_protocols"
@@ -63,7 +66,7 @@ def main() -> int:
         check_counts(df, p)
 
     timings = {}
-    extractor = LfccExtractor()
+    extractor = LfccExtractor(PRESETS[args.preset])
 
     # 1. features
     for p, df in protocols.items():
@@ -71,7 +74,7 @@ def main() -> int:
             continue
         t0 = time.perf_counter()
         extract_partition(df["utt_id"].tolist(), args.la_root / AUDIO_DIRS[p] / "flac",
-                          args.feat_dir / p, extractor)
+                          args.feat_dir / p, extractor, workers=args.workers)
         timings[f"lfcc_{p}_s"] = time.perf_counter() - t0
 
     # 2. GMMs
@@ -111,6 +114,7 @@ def main() -> int:
     run_info_path = args.out / "run_info.json"
     run_info = json.loads(run_info_path.read_text()) if run_info_path.exists() else {}
     run_info.update({
+        "preset": args.preset, "lfcc_config": asdict(PRESETS[args.preset]), "workers": args.workers,
         "seed": args.seed, "components": args.components, "em_iter": args.em_iter,
         "asv_rates": asdict(asv),
         "machine": platform.processor() or platform.machine(), "torch": torch.__version__,

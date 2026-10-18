@@ -87,6 +87,56 @@ def test_extract_partition_roundtrip(tmp_path):
         f"ECHEC stockage float16 : écart max {np.max(np.abs(stored - direct)):.3e}")
 
 
+def test_first_run_preset_matches_torchaudio_lfcc():
+    # Independent reference: torchaudio's own LFCC transform, which is what the
+    # first milestone-1 run used (Hann window, f_min = 0, log(E + 1e-6)).
+    import torchaudio
+
+    from adg.features import PRESETS
+
+    cfg = PRESETS["first_run"]
+    ref_tf = torchaudio.transforms.LFCC(
+        sample_rate=SR, n_filter=20, n_lfcc=20, log_lf=True,
+        speckwargs={"n_fft": 512, "win_length": 320, "hop_length": 160, "center": True})
+    x = 0.1 * torch.randn(SR, generator=torch.Generator().manual_seed(1))
+    with torch.inference_mode():
+        ref = ref_tf(x).T.numpy()  # (n_frames, 20), static part only
+    got = LfccExtractor(cfg)(x)[:, :20]
+    worst = float(np.max(np.abs(got - ref)))
+    assert worst < 1e-3, f"ECHEC comparaison torchaudio : écart max obtenu {worst:.2e}, attendu < 1e-3"
+
+
+def test_b02_preset_settings():
+    from adg.features import PRESETS
+
+    cfg = PRESETS["asvspoof2019_b02"]
+    got = (cfg.window, cfg.f_min, cfg.n_filter, cfg.n_lfcc, cfg.win_ms, cfg.hop_ms, cfg.dim)
+    expected = ("hamming", 30.0, 20, 20, 20.0, 10.0, 60)
+    assert got == expected, f"ECHEC preset B02 : obtenu {got}, attendu {expected}"
+
+
+def test_parallel_extraction_matches_sequential(tmp_path):
+    audio = tmp_path / "flac"
+    audio.mkdir()
+    utts = [f"u{i}" for i in range(6)]
+    for i, utt in enumerate(utts):
+        sf.write(audio / f"{utt}.flac", sine(0.3 + 0.1 * i, freq=200 + 50 * i).numpy(), SR)
+
+    ext = LfccExtractor()
+    extract_partition(utts, audio, tmp_path / "seq", ext, progress=False, workers=1)
+    extract_partition(utts, audio, tmp_path / "par", ext, progress=False, workers=2)
+    seq, _ = open_partition(tmp_path / "seq")
+    par, _ = open_partition(tmp_path / "par")
+    # Not bit-exact: workers run torch with 1 thread, so float sums are done in a
+    # different order and a few values round to the neighbouring float16. The
+    # first run of this test measured a max gap of 2.4e-4 (relative 1.4e-3), i.e.
+    # one float16 step (2^-10 ~ 9.8e-4 relative). Allow at most two steps.
+    seq, par = seq.astype(np.float32), par.astype(np.float32)
+    rel = float(np.max(np.abs(seq - par) / np.maximum(np.abs(seq), 1e-2)))
+    assert rel < 2 * 2.0 ** -10, (
+        f"ECHEC extraction parallèle : écart relatif max obtenu {rel:.2e}, attendu < {2 * 2.0 ** -10:.2e}")
+
+
 def test_missing_audio_is_reported(tmp_path):
     (tmp_path / "flac").mkdir()
     with pytest.raises(FileNotFoundError, match="1 audio files missing"):

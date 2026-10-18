@@ -1,0 +1,18 @@
+{
+  "seed": 0,
+  "components": 512,
+  "em_iter": 10,
+  "asv_rates": {
+    "p_fa": 0.024574669187145556,
+    "p_miss": 0.024581005586592177,
+    "p_miss_spoof": 0.23941016248708558
+  },
+  "machine": "AMD64 Family 23 Model 160 Stepping 0, AuthenticAMD",
+  "torch": "2.14.1+cpu",
+  "torch_threads": 4,
+  "lfcc_train_s": 781.4422828999996,
+  "lfcc_eval_s": 2173.241584700001,
+  "gmm_bona_s": 368.1864934999976,
+  "gmm_spoof_s": 1361.6230837999974,
+  "scoring_eval_s": 320.23415849999947
+}

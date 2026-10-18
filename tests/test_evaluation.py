@@ -14,9 +14,10 @@ def test_load_asv_rates_hand_computed(tmp_path):
     # spoofs [2.2, 0.5]: at t = 2, 0.5 is rejected -> Pmiss_spoof = 1/2.
     path = tmp_path / ASV_SCORE_FILE
     path.parent.mkdir(parents=True)
-    rows = [("LA_0001", "bonafide", "target", s) for s in (3, 2, 1)]
-    rows += [("LA_0001", "bonafide", "nontarget", s) for s in (0, -1, 2.5)]
-    rows += [("LA_0001", "A07", "spoof", s) for s in (2.2, 0.5)]
+    # Same 3-column layout as the real file: <source> <key> <score>.
+    rows = [("bonafide", "target", s) for s in (3, 2, 1)]
+    rows += [("bonafide", "nontarget", s) for s in (0, -1, 2.5)]
+    rows += [("A07", "spoof", s) for s in (2.2, 0.5)]
     path.write_text("\n".join(" ".join(map(str, r)) for r in rows) + "\n")
 
     r = load_asv_rates(tmp_path)

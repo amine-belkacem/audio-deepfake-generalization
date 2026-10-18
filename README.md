@@ -17,14 +17,32 @@ Three questions drive the project:
 
 ## Status
 
-Work in progress. Milestone 0 is done: protocol parsing, EER, min t-DCF and
-bootstrap confidence intervals, all unit-tested in CI. No results yet: every number
-will be added here only once it has been measured, with the script that produced it.
+Work in progress. Every number below was measured with the scripts in this repo;
+nothing is copied from papers except the official reference, which is cited.
+
+### Milestone 1: LFCC + GMM baseline
+
+| | EER (%) | 95 % CI | min t-DCF |
+|---|---|---|---|
+| my LFCC + GMM, B02 settings | 10.48 | [10.16, 10.78] | 0.279 |
+| official B02 (Todisco et al., 2019) | 8.09 | | 0.212 |
+
+I did not manage to reproduce the official baseline within the ±1.5 point margin I
+had set myself: I am 2.4 points above. Fixing the four settings that differed from
+the published description changed almost nothing (10.52 % before, 10.48 % after),
+and I stopped there rather than keep tuning on the eval set. The details, what I
+checked and what is still unknown are in [docs/M1_baseline.md](docs/M1_baseline.md).
+
+![per-attack EER](results/lfcc_gmm_asvspoof2019_b02/eer_per_attack.png)
+
+One result I did not expect: the two "known" attacks (A16, A19, same algorithms as
+two training attacks) are harder for this baseline than the 11 unseen ones,
+16.1 % against 9.0 % EER.
 
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Foundations: metrics, protocols, tests, CI | done |
-| M1 | LFCC + GMM baseline, reproduce the official EER | next |
+| M1 | LFCC + GMM baseline, reproduce the official EER | done, official EER not reproduced (see above) |
 | M2 | wav2vec 2.0 layer-wise probing | |
 | M3 | Full comparison, 3 seeds, In-the-Wild | |
 | M4 | Silence shortcut and frequency-band analysis | |

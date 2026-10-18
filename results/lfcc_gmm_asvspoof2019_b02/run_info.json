@@ -1,0 +1,33 @@
+{
+  "preset": "asvspoof2019_b02",
+  "lfcc_config": {
+    "sample_rate": 16000,
+    "n_fft": 512,
+    "win_ms": 20.0,
+    "hop_ms": 10.0,
+    "window": "hamming",
+    "f_min": 30.0,
+    "n_filter": 20,
+    "n_lfcc": 20,
+    "log_floor": 2.2204e-16,
+    "with_deltas": true,
+    "delta_win": 5
+  },
+  "workers": 7,
+  "seed": 0,
+  "components": 512,
+  "em_iter": 20,
+  "asv_rates": {
+    "p_fa": 0.024574669187145556,
+    "p_miss": 0.024581005586592177,
+    "p_miss_spoof": 0.23941016248708558
+  },
+  "machine": "AMD64 Family 23 Model 160 Stepping 0, AuthenticAMD",
+  "torch": "2.14.1+cpu",
+  "torch_threads": 4,
+  "lfcc_train_s": 498.6291710000005,
+  "lfcc_eval_s": 1289.3594505,
+  "gmm_bona_s": 434.48895690000063,
+  "gmm_spoof_s": 2237.2744217,
+  "scoring_eval_s": 306.19400250000035
+}

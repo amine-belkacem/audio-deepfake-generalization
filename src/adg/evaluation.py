@@ -23,11 +23,13 @@ def load_asv_rates(la_root: str | Path) -> AsvErrorRates:
 
     This is how the official t-DCF script sets the ASV operating point: the ASV
     threshold is the EER threshold between target and non-target trials.
-    File format (one trial per line): <speaker> <source> <key> <score>,
-    with key in {target, nontarget, spoof}.
+    File format (one trial per line): <source> <key> <score>, e.g.
+    "bonafide target 7.98" or "A07 spoof -3.1", with key in {target, nontarget, spoof}.
     """
     path = Path(la_root) / ASV_SCORE_FILE
-    df = pd.read_csv(path, sep=r"\s+", header=None, names=["speaker", "source", "key", "score"])
+    df = pd.read_csv(path, sep=r"\s+", header=None, names=["source", "key", "score"])
+    if df.isna().any().any():
+        raise ValueError(f"{path.name}: some lines do not have 3 fields")
     if set(df["key"]) != ASV_KEYS:
         raise ValueError(f"{path.name}: keys {sorted(set(df['key']))}, expected {sorted(ASV_KEYS)}")
     tar = df.loc[df["key"] == "target", "score"].to_numpy()
