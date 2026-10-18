@@ -1,0 +1,4 @@
+# Minimal set for the unit tests. They run on synthetic data, so no PyTorch here.
+numpy
+pandas
+pytest

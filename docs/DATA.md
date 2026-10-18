@@ -1,0 +1,37 @@
+# Data sources and licences
+
+No audio is stored in this repository. The scripts in `scripts/` download each
+dataset from its official source into `data/` (ignored by git).
+
+| Dataset | Used for | Source | Licence |
+|---|---|---|---|
+| ASVspoof 2019 LA | train / dev / eval, main experiments | [Edinburgh DataShare, doi:10.7488/ds/2555](https://doi.org/10.7488/ds/2555) (`LA.zip`, 7.12 GB) | [ODC-By 1.0](https://opendatacommons.org/licenses/by/1-0/) (checked in `LICENSE_text.txt` of the release) |
+| ASVspoof 2021 LA (eval) | real telephony / VoIP channels (milestone 5) | [Zenodo record 4837263](https://zenodo.org/record/4837263) | ODC-By, according to the organisers' 2022 announcement. Still to be confirmed on the Zenodo page before use |
+| In-the-Wild | out-of-domain test (milestone 3) | [Fraunhofer AISEC](https://deepfake-demo.aisec.fraunhofer.de/in_the_wild) | Apache 2.0, according to the project page. Still to be confirmed before use |
+
+## Attribution
+
+ASVspoof 2019:
+
+> Yamagishi, J., Todisco, M., Sahidullah, M., Delgado, H., Wang, X., Evans, N.,
+> Kinnunen, T., Lee, K. A., Vestman, V., Nautsch, A. (2019). ASVspoof 2019: The 3rd
+> Automatic Speaker Verification Spoofing and Countermeasures Challenge database.
+> University of Edinburgh, CSTR. https://doi.org/10.7488/ds/2555
+
+In-the-Wild:
+
+> Müller, N. M., Czempin, P., Dieckmann, F., Froghyar, A., Böttinger, K. (2022).
+> Does Audio Deepfake Detection Generalize? Interspeech 2022. arXiv:2203.16263
+
+## Expected counts (ASVspoof 2019 LA, CM protocols)
+
+These are checked automatically by `adg.protocols.check_counts`.
+
+| Partition | Bona fide | Spoof | Attacks | Total |
+|---|---|---|---|---|
+| train | 2,580 | 22,800 (6 × 3,800) | A01–A06 | 25,380 |
+| dev | 2,548 | 22,296 (6 × 3,716) | A01–A06 | 24,844 |
+| eval | 7,355 | 63,882 (13 × 4,914) | A07–A19 | 71,237 |
+
+On the eval set, A16 and A19 reuse the algorithms of A04 and A06, so I treat them as
+"known" attacks. The other 11 are generators the model never saw in training.

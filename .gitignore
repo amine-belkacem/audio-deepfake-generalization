@@ -1,0 +1,19 @@
+# Datasets and anything derived from them stay local (licence + size).
+data/
+*.flac
+*.wav
+*.zip
+features/
+*.npy
+*.npz
+
+# Python
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
