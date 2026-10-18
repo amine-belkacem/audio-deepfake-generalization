@@ -97,4 +97,5 @@ python scripts/run_lfcc_gmm.py --preset first_run --em-iter 10
 python scripts/plot_per_attack.py results/lfcc_gmm_asvspoof2019_b02/metrics_eval.csv results/lfcc_gmm_asvspoof2019_b02/eer_per_attack.png
 ```
 
-Scores, GMM parameters and run metadata for both runs are in `results/`.
+Per-trial scores, metrics and run metadata (settings, seed, timings) for both runs
+are in `results/`. The fitted GMMs are not committed; the script rebuilds them.
