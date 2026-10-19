@@ -73,7 +73,7 @@ class Wav2Vec2LayerExtractor:
 
 def extract_to_memmap(paths: list[Path], out_path: str | Path, extractor: Wav2Vec2LayerExtractor,
                       n_layers: int, feat_dim: int, checkpoint_every: int = 500,
-                      progress: bool = True) -> None:
+                      progress: bool = True, resample: bool = False) -> None:
     """Fill out_path (.npy, float16, shape (N, n_layers, feat_dim)) one file at a time.
 
     A companion "<out>.done.npy" boolean mask records which rows are finished, so
@@ -100,7 +100,7 @@ def extract_to_memmap(paths: list[Path], out_path: str | Path, extractor: Wav2Ve
         iterator = tqdm(todo, desc=out_path.stem, mininterval=30)
 
     for k, i in enumerate(iterator, start=1):
-        pooled = extractor(load_audio(paths[i], SAMPLE_RATE))
+        pooled = extractor(load_audio(paths[i], SAMPLE_RATE, resample=resample))
         if pooled.shape != shape[1:]:
             raise RuntimeError(f"{paths[i].name}: got {pooled.shape}, expected {shape[1:]}")
         feats[i] = pooled

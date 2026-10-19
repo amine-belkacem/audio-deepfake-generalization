@@ -11,6 +11,7 @@ Output, per partition, in --out:
 
 Usage:
     python scripts/extract_wav2vec2.py --la-root data/LA --out features/w2v2_base --device cuda
+    python scripts/extract_wav2vec2.py --itw-root data/in_the_wild --partitions itw --out features/w2v2_base
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ import torch
 import torchaudio
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from adg.in_the_wild import read_in_the_wild  # noqa: E402
 from adg.protocols import check_counts, load_partition  # noqa: E402
 from adg.ssl_features import Wav2Vec2LayerExtractor, extract_to_memmap  # noqa: E402
 
@@ -36,10 +38,11 @@ N_LAYERS, FEAT_DIM = 12, 2 * 768
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--la-root", type=Path, required=True)
+    ap.add_argument("--la-root", type=Path, default=Path("data/LA"))
+    ap.add_argument("--itw-root", type=Path, default=Path("data/in_the_wild"))
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    ap.add_argument("--partitions", nargs="+", default=["train", "dev", "eval"], choices=list(AUDIO_DIRS))
+    ap.add_argument("--partitions", nargs="+", default=["train", "dev", "eval"], choices=[*AUDIO_DIRS, "itw"])
     ap.add_argument("--limit", type=int, default=None, help="smoke test: only the first N files per partition")
     ap.add_argument("--random-weights", action="store_true", help="smoke test: untrained model, no download")
     args = ap.parse_args()
@@ -57,15 +60,22 @@ def main() -> int:
 
     proto_dir = args.la_root / "ASVspoof2019_LA_cm_protocols"
     for part in args.partitions:
-        df = load_partition(proto_dir, part)
-        check_counts(df, part)
+        if part == "itw":
+            df = read_in_the_wild(args.itw_root)
+        else:
+            df = load_partition(proto_dir, part)
+            check_counts(df, part)
         if args.limit is not None:
             df = df.head(args.limit)
         df[["utt_id"]].to_csv(args.out / f"{part}_utt_ids.csv", index=False)
-        paths = [args.la_root / AUDIO_DIRS[part] / "flac" / f"{u}.flac" for u in df["utt_id"]]
+        if part == "itw":
+            paths = [Path(p) for p in df["path"]]
+        else:
+            paths = [args.la_root / AUDIO_DIRS[part] / "flac" / f"{u}.flac" for u in df["utt_id"]]
 
         t0 = time.perf_counter()
-        extract_to_memmap(paths, args.out / f"{part}.npy", extractor, N_LAYERS, FEAT_DIM)
+        extract_to_memmap(paths, args.out / f"{part}.npy", extractor, N_LAYERS, FEAT_DIM,
+                          resample=(part == "itw"))
         elapsed = time.perf_counter() - t0
         # Only meaningful for an uninterrupted run; a resumed run times the remainder.
         info[f"{part}_seconds"] = elapsed

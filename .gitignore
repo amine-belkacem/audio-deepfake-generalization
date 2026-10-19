@@ -6,6 +6,9 @@ data/
 features/
 *.npy
 *.npz
+# ...except the milestone 1 GMMs (0.5 MB each), reused on Kaggle for In-the-Wild
+!results/lfcc_gmm_*/gmm_*.npz
+*.pt
 
 # Python
 .venv/

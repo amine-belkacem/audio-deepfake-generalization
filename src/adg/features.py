@@ -76,14 +76,29 @@ PRESETS = {
 }
 
 
-def load_audio(path: str | Path, expected_sr: int) -> torch.Tensor:
-    """Read a mono file as a float32 tensor of shape (n_samples,)."""
+def resampled_length(n_samples: int, orig_sr: int, new_sr: int) -> int:
+    """Output length of torchaudio.functional.resample: ceil(n * new / orig)."""
+    return -(-n_samples * new_sr // orig_sr)
+
+
+def load_audio(path: str | Path, expected_sr: int, resample: bool = False) -> torch.Tensor:
+    """Read a file as a float32 tensor of shape (n_samples,).
+
+    Strict by default (ASVspoof is 16 kHz mono, anything else means a wrong file).
+    With resample=True, for third-party data such as In-the-Wild: channels are
+    averaged and the signal is resampled to expected_sr.
+    """
     data, sr = sf.read(str(path), dtype="float32", always_2d=False)
-    if sr != expected_sr:
-        raise ValueError(f"{path}: sample rate {sr}, expected {expected_sr}")
     if data.ndim != 1:
-        raise ValueError(f"{path}: expected mono audio, got shape {data.shape}")
-    return torch.from_numpy(data)
+        if not resample:
+            raise ValueError(f"{path}: expected mono audio, got shape {data.shape}")
+        data = data.mean(axis=1)
+    x = torch.from_numpy(np.ascontiguousarray(data))
+    if sr != expected_sr:
+        if not resample:
+            raise ValueError(f"{path}: sample rate {sr}, expected {expected_sr}")
+        x = torchaudio.functional.resample(x, sr, expected_sr)
+    return x
 
 
 class LfccExtractor:
@@ -117,47 +132,68 @@ class LfccExtractor:
 
 # Worker-process state for the parallel extraction (one extractor per process).
 _worker_extractor: LfccExtractor | None = None
+_worker_resample = False
 
 
-def _init_worker(config: LfccConfig) -> None:
-    global _worker_extractor
+def _init_worker(config: LfccConfig, resample: bool) -> None:
+    global _worker_extractor, _worker_resample
     torch.set_num_threads(1)  # parallelism comes from the processes, not from torch
     _worker_extractor = LfccExtractor(config)
+    _worker_resample = resample
 
 
 def _extract_one(path: Path) -> np.ndarray:
-    return _worker_extractor(load_audio(path, _worker_extractor.config.sample_rate)).astype(np.float16)
+    x = load_audio(path, _worker_extractor.config.sample_rate, resample=_worker_resample)
+    return _worker_extractor(x).astype(np.float16)
 
 
 def extract_partition(utt_ids: list[str], audio_dir: str | Path, out_dir: str | Path,
                       extractor: LfccExtractor, progress: bool = True, workers: int = 1) -> None:
-    """Extract features for every utterance into out_dir/frames.npy + index.csv.
+    """ASVspoof layout: <audio_dir>/<utt_id>.flac. See extract_files."""
+    audio_dir = Path(audio_dir)
+    extract_files([audio_dir / f"{u}.flac" for u in utt_ids], utt_ids, out_dir, extractor,
+                  progress=progress, workers=workers)
+
+
+def extract_files(paths: list[Path], utt_ids: list[str], out_dir: str | Path, extractor: LfccExtractor,
+                  progress: bool = True, workers: int = 1, resample: bool = False) -> None:
+    """Extract features for every file into out_dir/frames.npy + index.csv.
 
     Two passes: first read the file headers to size the output exactly, then
     fill a memory-mapped array. Nothing larger than one utterance is held in RAM.
     With workers > 1, files are decoded and processed in separate processes; the
     main process only writes the results into the memmap, in order.
     """
-    audio_dir, out_dir = Path(audio_dir), Path(out_dir)
+    out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     cfg = extractor.config
+    if len(paths) != len(utt_ids):
+        raise ValueError(f"{len(paths)} paths for {len(utt_ids)} utterance ids")
 
-    paths = [audio_dir / f"{u}.flac" for u in utt_ids]
+    paths = [Path(p) for p in paths]
     missing = [p for p in paths if not p.is_file()]
     if missing:
         raise FileNotFoundError(f"{len(missing)} audio files missing, first: {missing[0]}")
 
-    counts = np.array([cfg.n_frames(sf.info(str(p)).frames) for p in paths], dtype=np.int64)
+    def n_samples(p: Path) -> int:
+        info = sf.info(str(p))
+        if info.samplerate == cfg.sample_rate:
+            return info.frames
+        if not resample:
+            raise ValueError(f"{p}: sample rate {info.samplerate}, expected {cfg.sample_rate}")
+        return resampled_length(info.frames, info.samplerate, cfg.sample_rate)
+
+    counts = np.array([cfg.n_frames(n_samples(p)) for p in paths], dtype=np.int64)
     starts = np.concatenate([[0], np.cumsum(counts)[:-1]])
     frames = np.lib.format.open_memmap(out_dir / "frames.npy", mode="w+", dtype=np.float16,
                                        shape=(int(counts.sum()), cfg.dim))
 
     if workers > 1:
-        pool = ProcessPoolExecutor(workers, initializer=_init_worker, initargs=(cfg,))
+        pool = ProcessPoolExecutor(workers, initializer=_init_worker, initargs=(cfg, resample))
         results = pool.map(_extract_one, paths, chunksize=64)
     else:
         pool = None
-        results = (extractor(load_audio(p, cfg.sample_rate)) for p in paths)
+        results = (extractor(load_audio(p, cfg.sample_rate, resample=resample)) for p in paths)
 
     iterator = zip(paths, starts, counts, results)
     if progress:
