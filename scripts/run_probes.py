@@ -34,9 +34,10 @@ from adg.protocols import load_partition  # noqa: E402
 
 def plot(table: pd.DataFrame, out_png: Path) -> None:
     fig, ax = plt.subplots(figsize=(8, 4))
-    styles = {"pooled": ("0.2", "o", "pooled (13 attacks)"),
-              "known (A16, A19)": ("#4C72B0", "s", "known attacks (A16, A19)"),
-              "unknown (11 attacks)": ("#DD8452", "^", "unseen attacks (11)")}
+    # teal, violet, magenta: blue and orange only once every other colour is used.
+    styles = {"pooled": ("#1baf7a", "o", "pooled (13 attacks)"),
+              "known (A16, A19)": ("#6250d6", "s", "known attacks (A16, A19)"),
+              "unknown (11 attacks)": ("#e87ba4", "^", "unseen attacks (11)")}
     for cond, (color, marker, label) in styles.items():
         sub = table[table["condition"] == cond].sort_values("layer")
         ax.plot(sub["layer"], sub["eer_pct"], marker=marker, color=color, label=label)

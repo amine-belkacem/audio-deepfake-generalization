@@ -17,14 +17,17 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.lines import Line2D  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 import pandas as pd  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from adg.protocols import EVAL_ATTACKS, KNOWN_EVAL_ATTACKS  # noqa: E402
 
-COLOR_KNOWN = "#4C72B0"
-COLOR_UNKNOWN = "#DD8452"
+# Two series: teal + violet. Blue and orange are kept for when nothing else is left.
+COLOR_KNOWN = "#6250d6"    # violet
+COLOR_UNKNOWN = "#1baf7a"  # teal
+COLOR_REFERENCE = "#8a8986"  # grey, for the pooled line
 
 
 def main() -> int:
@@ -45,13 +48,14 @@ def main() -> int:
     fig, ax = plt.subplots(figsize=(9, 4))
     ax.bar(attacks, sub["eer_pct"], color=colors, yerr=err, capsize=3)
     pooled = df.loc["pooled", "eer_pct"]
-    ax.axhline(pooled, color="0.3", linestyle="--", linewidth=1)
-    ax.text(-0.5, pooled, f"pooled {pooled:.2f} %", va="bottom", ha="left", fontsize=9, color="0.3")
+    ax.axhline(pooled, color=COLOR_REFERENCE, linestyle="--", linewidth=1)
     ax.set_ylim(0, 1.3 * float(sub["eer_high_pct"].max()))  # head room for the legend
     ax.set_ylabel("EER (%)")
     ax.set_title(args.title)
     ax.legend(handles=[Patch(color=COLOR_KNOWN, label="known (same algorithm as a training attack)"),
-                       Patch(color=COLOR_UNKNOWN, label="unseen generator")],
+                       Patch(color=COLOR_UNKNOWN, label="unseen generator"),
+                       Line2D([], [], color=COLOR_REFERENCE, linestyle="--",
+                              label=f"pooled over all attacks: {pooled:.2f} %")],
               frameon=False, fontsize=9, loc="upper center")
     ax.spines[["top", "right"]].set_visible(False)
     fig.tight_layout()
