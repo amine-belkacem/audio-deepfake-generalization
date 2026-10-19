@@ -39,11 +39,28 @@ One result I did not expect: the two "known" attacks (A16, A19, same algorithms 
 two training attacks) are harder for this baseline than the 11 unseen ones,
 16.1 % against 9.0 % EER.
 
+### Milestone 2: which wav2vec 2.0 layer hears the fake?
+
+One logistic regression per layer of a frozen wav2vec 2.0 BASE, on the mean and std of
+that layer over time. The layer is picked on dev (training attacks only), never on eval.
+
+![EER per layer](results/w2v2_probes/eer_per_layer.png)
+
+| | pooled EER (%) | 95 % CI | unseen attacks EER (%) | min t-DCF |
+|---|---|---|---|---|
+| LFCC + GMM (M1) | 10.48 | [10.16, 10.78] | 9.02 | 0.279 |
+| wav2vec 2.0 layer 3 + linear probe | 1.21 | [1.08, 1.32] | 1.25 | 0.037 |
+
+The early layers (2 to 4) carry most of the information; the last layer is about four
+times worse. I am suspicious of how good this looks: the pooling includes silence, and
+ASVspoof 2019 is known to leak the label through silence length. Milestone 4 checks that.
+Details in [docs/M2_probes.md](docs/M2_probes.md).
+
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Foundations: metrics, protocols, tests, CI | done |
 | M1 | LFCC + GMM baseline, reproduce the official EER | done, official EER not reproduced (see above) |
-| M2 | wav2vec 2.0 layer-wise probing | |
+| M2 | wav2vec 2.0 layer-wise probing | done |
 | M3 | Full comparison, 3 seeds, In-the-Wild | |
 | M4 | Silence shortcut and frequency-band analysis | |
 | M5 | Telephone-channel robustness | |
