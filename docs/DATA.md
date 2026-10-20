@@ -9,6 +9,16 @@ dataset from its official source into `data/` (ignored by git).
 | ASVspoof 2021 LA (eval) | real telephony / VoIP channels (milestone 5) | [Zenodo record 4837263](https://zenodo.org/record/4837263) | ODC-By, according to the organisers' 2022 announcement. Still to be confirmed on the Zenodo page before use |
 | In-the-Wild | out-of-domain test (milestone 3) | [Hugging Face `mueller91/In-The-Wild`](https://huggingface.co/datasets/mueller91/In-The-Wild) (`release_in_the_wild.zip`, 8.16 GB); also listed on the [Fraunhofer AISEC page](https://deepfake-demo.aisec.fraunhofer.de/in_the_wild) | The two sources disagree: CC-BY-SA 4.0 on the Hugging Face card, Apache 2.0 on the Fraunhofer page when I checked it. Both allow what I do here (use the data, publish scores and metrics with attribution, never redistribute the audio) |
 
+## Kaggle runs and the community copy of ASVspoof 2019
+
+From Kaggle, Edinburgh DataShare answered HTTP 403 to every request (milestone 3, October 2026), while it
+answered normally from my laptop. The milestone 3 notebook therefore reads the community copy
+[awsaf49/asvpoof-2019-dataset](https://www.kaggle.com/datasets/awsaf49/asvpoof-2019-dataset), which ODC-By
+allows. Before anything runs, `scripts/verify_asvspoof_copy.py` checks it against my official download: the
+official counts, speaker disjointness, the presence of all 121,461 audio files, and SHA-256 digests of the
+protocol files, the ASV score file and 60 random audio files (`docs/asvspoof2019_la_sha256.json`). It is a
+sample check, not a full byte comparison.
+
 ## Attribution
 
 ASVspoof 2019:

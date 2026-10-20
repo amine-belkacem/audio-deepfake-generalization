@@ -48,3 +48,25 @@ def test_gives_up_after_the_last_attempt():
     with pytest.raises(urllib.error.HTTPError):
         open_with_retry("req", attempts=3, opener=opener, sleep=lambda s: None)
     assert len(calls) == 3, f"ECHEC nb tentatives : obtenu {len(calls)}, attendu 3"
+
+
+def test_find_la_root_in_a_mounted_copy(tmp_path):
+    from verify_asvspoof_copy import find_la_root
+
+    proto = tmp_path / "asvpoof-2019-dataset" / "LA" / "LA" / "ASVspoof2019_LA_cm_protocols"
+    proto.mkdir(parents=True)
+    (proto / "ASVspoof2019.LA.cm.train.trn.txt").write_text("")
+    got = find_la_root(tmp_path)
+    expected = tmp_path / "asvpoof-2019-dataset" / "LA" / "LA"
+    assert got == expected, f"ECHEC recherche du dossier LA : obtenu {got}, attendu {expected}"
+
+
+def test_find_la_root_refuses_two_copies(tmp_path):
+    from verify_asvspoof_copy import find_la_root
+
+    for name in ("a", "b"):
+        proto = tmp_path / name / "ASVspoof2019_LA_cm_protocols"
+        proto.mkdir(parents=True)
+        (proto / "ASVspoof2019.LA.cm.train.trn.txt").write_text("")
+    with pytest.raises(SystemExit, match="expected one"):
+        find_la_root(tmp_path)
