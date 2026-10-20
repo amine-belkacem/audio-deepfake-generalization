@@ -12,6 +12,8 @@ from __future__ import annotations
 import argparse
 import hashlib
 import sys
+import time
+import urllib.error
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -24,10 +26,41 @@ CHUNK_BYTES = 1 << 20
 PROTOCOL_SUBDIR = Path("LA") / "ASVspoof2019_LA_cm_protocols"
 
 
+USER_AGENT = "audio-deepfake-generalization/0.1 (research download; github.com/amine-belkacem)"
+RETRY_CODES = {403, 429, 500, 502, 503, 504}
+
+
+def open_with_retry(req, attempts: int = 5, first_wait_s: float = 30.0,
+                    opener=urllib.request.urlopen, sleep=time.sleep):
+    """urlopen with exponential back-off (30 s, 60 s, 120 s, ...).
+
+    Added after a Kaggle run got "HTTP 403 Forbidden" from DataShare while the
+    same URL answered normally from my laptop: the refusal was temporary, and
+    one failed request should not cost a whole GPU session.
+    """
+    for k in range(attempts):
+        try:
+            return opener(req, timeout=60)
+        except urllib.error.HTTPError as e:
+            if e.code not in RETRY_CODES or k == attempts - 1:
+                raise
+            reason = f"HTTP {e.code}"
+        except urllib.error.URLError as e:
+            if k == attempts - 1:
+                raise
+            reason = str(e.reason)
+        wait = first_wait_s * 2 ** k
+        print(f"{reason}, retry {k + 2}/{attempts} in {wait:.0f} s", flush=True)
+        sleep(wait)
+    raise RuntimeError("unreachable")
+
+
 def download(url: str, dest: Path) -> None:
     done = dest.stat().st_size if dest.exists() else 0
-    req = urllib.request.Request(url, headers={"Range": f"bytes={done}-"} if done else {})
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    headers = {"User-Agent": USER_AGENT}
+    if done:
+        headers["Range"] = f"bytes={done}-"
+    with open_with_retry(urllib.request.Request(url, headers=headers)) as resp:
         if done and resp.status != 206:
             print("server ignored the resume request, starting over")
             done = 0
