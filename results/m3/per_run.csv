@@ -1,0 +1,25 @@
+system,run,test,eer_pct,low,high,min_tdcf,file
+LFCC + GMM,0,eval,10.4822,10.1562,10.7821,0.2793,results\lfcc_gmm_asvspoof2019_b02\scores_eval.csv
+LFCC + GMM,0,eval unseen,9.0156,8.7143,9.3276,0.2443,results\lfcc_gmm_asvspoof2019_b02\scores_eval.csv
+LFCC + GMM,0,In-the-Wild,36.7197,36.1397,37.2887,,results\lfcc_gmm_asvspoof2019_b02\scores_itw.csv
+LFCC + LCNN,0,eval,5.1685,4.9729,5.3909,0.1416,results\lfcc_lcnn\scores_eval_seed0.csv
+LFCC + LCNN,0,eval unseen,5.6823,5.4387,5.9012,0.1525,results\lfcc_lcnn\scores_eval_seed0.csv
+LFCC + LCNN,0,In-the-Wild,74.8296,74.2151,75.3574,,results\lfcc_lcnn\scores_itw_seed0.csv
+LFCC + LCNN,1,eval,5.3161,5.1155,5.5336,0.1176,results\lfcc_lcnn\scores_eval_seed1.csv
+LFCC + LCNN,1,eval unseen,5.8604,5.6575,6.0793,0.1286,results\lfcc_lcnn\scores_eval_seed1.csv
+LFCC + LCNN,1,In-the-Wild,65.9180,65.3007,66.4645,,results\lfcc_lcnn\scores_itw_seed1.csv
+LFCC + LCNN,2,eval,6.4146,6.2002,6.6624,0.1652,results\lfcc_lcnn\scores_eval_seed2.csv
+LFCC + LCNN,2,eval unseen,7.0562,6.8135,7.2979,0.1792,results\lfcc_lcnn\scores_eval_seed2.csv
+LFCC + LCNN,2,In-the-Wild,75.0591,74.5361,75.6008,,results\lfcc_lcnn\scores_itw_seed2.csv
+wav2vec 2.0 + linear probe (layer 3),0,eval,1.2101,1.0776,1.3184,0.0372,results\w2v2_probes\scores_eval_layer3.csv
+wav2vec 2.0 + linear probe (layer 3),0,eval unseen,1.2507,1.1257,1.3770,0.0388,results\w2v2_probes\scores_eval_layer3.csv
+wav2vec 2.0 + linear probe (layer 3),0,In-the-Wild,22.4361,21.9426,22.8514,,results\w2v2_probes\scores_itw_layer3.csv
+wav2vec 2.0 + MLP (weighted layers),0,eval,1.4292,1.2915,1.5629,0.0421,results\w2v2_mlp\scores_eval_seed0.csv
+wav2vec 2.0 + MLP (weighted layers),0,eval unseen,1.4952,1.3720,1.6449,0.0438,results\w2v2_mlp\scores_eval_seed0.csv
+wav2vec 2.0 + MLP (weighted layers),0,In-the-Wild,26.1337,25.6520,26.6154,,results\w2v2_mlp\scores_itw_seed0.csv
+wav2vec 2.0 + MLP (weighted layers),1,eval,1.8374,1.6859,2.0012,0.0533,results\w2v2_mlp\scores_eval_seed1.csv
+wav2vec 2.0 + MLP (weighted layers),1,eval unseen,1.9718,1.8248,2.1390,0.0572,results\w2v2_mlp\scores_eval_seed1.csv
+wav2vec 2.0 + MLP (weighted layers),1,In-the-Wild,26.4388,25.9318,26.9299,,results\w2v2_mlp\scores_itw_seed1.csv
+wav2vec 2.0 + MLP (weighted layers),2,eval,1.6590,1.5221,1.8236,0.0483,results\w2v2_mlp\scores_eval_seed2.csv
+wav2vec 2.0 + MLP (weighted layers),2,eval unseen,1.7699,1.6449,1.9320,0.0515,results\w2v2_mlp\scores_eval_seed2.csv
+wav2vec 2.0 + MLP (weighted layers),2,In-the-Wild,25.9639,25.4821,26.4482,,results\w2v2_mlp\scores_itw_seed2.csv

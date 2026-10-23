@@ -1,0 +1,5 @@
+{
+  "n_boot": 1000,
+  "bootstrap_seed": "run index",
+  "std": "sample std over seeds (ddof=1)"
+}

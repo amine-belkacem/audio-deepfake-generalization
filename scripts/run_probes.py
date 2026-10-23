@@ -27,7 +27,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from adg.datasets import load_labels  # noqa: E402
 from adg.evaluation import evaluate, join_scores, load_asv_rates  # noqa: E402
+from adg.metrics import compute_eer  # noqa: E402
 from adg.probes import fit_layer_probe, load_split, probe_scores  # noqa: E402
 from adg.protocols import load_partition  # noqa: E402
 
@@ -57,6 +59,7 @@ def main() -> int:
     ap.add_argument("--la-root", type=Path, default=Path("data/LA"))
     ap.add_argument("--feat-dir", type=Path, default=Path("features/w2v2_base"))
     ap.add_argument("--out", type=Path, default=Path("results/w2v2_probes"))
+    ap.add_argument("--itw-root", type=Path, default=Path("data/in_the_wild"))
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--n-boot", type=int, default=1000)
     args = ap.parse_args()
@@ -67,6 +70,11 @@ def main() -> int:
     feats = {p: load_split(args.feat_dir, p, protos[p]) for p in protos}
     asv = load_asv_rates(args.la_root)
     n_layers = feats["train"].shape[1]
+    # Milestone 3: the same probes are also scored on In-the-Wild when its features exist.
+    itw = None
+    if (args.feat_dir / "itw.npy").exists():
+        itw_labels = load_labels("itw", itw_root=args.itw_root)
+        itw = (itw_labels, load_split(args.feat_dir, "itw", itw_labels))
 
     rows, chosen, best = [], {}, None
     for k in range(n_layers):
@@ -81,6 +89,13 @@ def main() -> int:
         table.insert(0, "layer", k + 1)
         table["dev_eer_pct"] = 100 * probe.dev_eer
         table["C"] = probe.c
+        if itw is not None:
+            itw_scores = pd.DataFrame({"utt_id": itw[0]["utt_id"],
+                                       "score": probe_scores(probe.model, itw[1][:, k])})
+            itw_scores.to_csv(args.out / f"scores_itw_layer{k + 1}.csv", index=False)
+            s = itw_scores["score"].to_numpy()
+            y = itw[0]["label"].to_numpy()
+            table["itw_eer_pct"] = 100 * compute_eer(s[y == 1], s[y == 0])[0]
         rows.append(table)
         chosen[k + 1] = probe.c
         if best is None or probe.dev_eer < best[1]:
