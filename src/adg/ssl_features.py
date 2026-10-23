@@ -19,6 +19,8 @@ import numpy as np
 import torch
 
 from .features import load_audio
+from .transforms import apply as apply_transform
+from .transforms import validate as validate_transform
 
 SAMPLE_RATE = 16000
 
@@ -73,12 +75,13 @@ class Wav2Vec2LayerExtractor:
 
 def extract_to_memmap(paths: list[Path], out_path: str | Path, extractor: Wav2Vec2LayerExtractor,
                       n_layers: int, feat_dim: int, checkpoint_every: int = 500,
-                      progress: bool = True, resample: bool = False) -> None:
+                      progress: bool = True, resample: bool = False, transform: str = "none") -> None:
     """Fill out_path (.npy, float16, shape (N, n_layers, feat_dim)) one file at a time.
 
     A companion "<out>.done.npy" boolean mask records which rows are finished, so
     a Kaggle session that hits its time limit can be resumed where it stopped.
     """
+    validate_transform(transform)
     out_path = Path(out_path)
     done_path = out_path.with_suffix(".done.npy")
     shape = (len(paths), n_layers, feat_dim)
@@ -100,7 +103,8 @@ def extract_to_memmap(paths: list[Path], out_path: str | Path, extractor: Wav2Ve
         iterator = tqdm(todo, desc=out_path.stem, mininterval=30)
 
     for k, i in enumerate(iterator, start=1):
-        pooled = extractor(load_audio(paths[i], SAMPLE_RATE, resample=resample))
+        x = apply_transform(load_audio(paths[i], SAMPLE_RATE, resample=resample), SAMPLE_RATE, transform)
+        pooled = extractor(x)
         if pooled.shape != shape[1:]:
             raise RuntimeError(f"{paths[i].name}: got {pooled.shape}, expected {shape[1:]}")
         feats[i] = pooled

@@ -24,6 +24,9 @@ import soundfile as sf
 import torch
 import torchaudio
 
+from .transforms import apply as apply_transform
+from .transforms import validate as validate_transform
+
 INDEX_COLUMNS = ["utt_id", "start", "n_frames"]
 WINDOWS = {"hann": torch.hann_window, "hamming": torch.hamming_window}
 
@@ -133,18 +136,28 @@ class LfccExtractor:
 # Worker-process state for the parallel extraction (one extractor per process).
 _worker_extractor: LfccExtractor | None = None
 _worker_resample = False
+_worker_transform = "none"
 
 
-def _init_worker(config: LfccConfig, resample: bool) -> None:
-    global _worker_extractor, _worker_resample
+def _init_worker(config: LfccConfig, resample: bool, transform: str = "none") -> None:
+    global _worker_extractor, _worker_resample, _worker_transform
     torch.set_num_threads(1)  # parallelism comes from the processes, not from torch
     _worker_extractor = LfccExtractor(config)
     _worker_resample = resample
+    _worker_transform = transform
+
+
+def _load_transformed(path: Path, sr: int, resample: bool, transform: str) -> torch.Tensor:
+    return apply_transform(load_audio(path, sr, resample=resample), sr, transform)
 
 
 def _extract_one(path: Path) -> np.ndarray:
-    x = load_audio(path, _worker_extractor.config.sample_rate, resample=_worker_resample)
-    return _worker_extractor(x).astype(np.float16)
+    sr = _worker_extractor.config.sample_rate
+    return _worker_extractor(_load_transformed(path, sr, _worker_resample, _worker_transform)).astype(np.float16)
+
+
+def _transformed_length(path: Path) -> int:
+    return _load_transformed(path, _worker_extractor.config.sample_rate, _worker_resample, _worker_transform).numel()
 
 
 def extract_partition(utt_ids: list[str], audio_dir: str | Path, out_dir: str | Path,
@@ -156,8 +169,13 @@ def extract_partition(utt_ids: list[str], audio_dir: str | Path, out_dir: str | 
 
 
 def extract_files(paths: list[Path], utt_ids: list[str], out_dir: str | Path, extractor: LfccExtractor,
-                  progress: bool = True, workers: int = 1, resample: bool = False) -> None:
+                  progress: bool = True, workers: int = 1, resample: bool = False,
+                  transform: str = "none") -> None:
     """Extract features for every file into out_dir/frames.npy + index.csv.
+
+    transform (see adg.transforms) is applied to each waveform before the LFCC.
+    Silence trimming changes the length, so for "trim..." the lengths are
+    measured in an extra pass over the audio instead of read from the headers.
 
     Two passes: first read the file headers to size the output exactly, then
     fill a memory-mapped array. Nothing larger than one utterance is held in RAM.
@@ -183,17 +201,25 @@ def extract_files(paths: list[Path], utt_ids: list[str], out_dir: str | Path, ex
             raise ValueError(f"{p}: sample rate {info.samplerate}, expected {cfg.sample_rate}")
         return resampled_length(info.frames, info.samplerate, cfg.sample_rate)
 
-    counts = np.array([cfg.n_frames(n_samples(p)) for p in paths], dtype=np.int64)
+    validate_transform(transform)
+    pool = ProcessPoolExecutor(workers, initializer=_init_worker, initargs=(cfg, resample, transform)) \
+        if workers > 1 else None
+    if transform.startswith("trim"):
+        if pool is not None:
+            lengths = list(pool.map(_transformed_length, paths, chunksize=64))
+        else:
+            lengths = [_load_transformed(p, cfg.sample_rate, resample, transform).numel() for p in paths]
+    else:
+        lengths = [n_samples(p) for p in paths]
+    counts = np.array([cfg.n_frames(n) for n in lengths], dtype=np.int64)
     starts = np.concatenate([[0], np.cumsum(counts)[:-1]])
     frames = np.lib.format.open_memmap(out_dir / "frames.npy", mode="w+", dtype=np.float16,
                                        shape=(int(counts.sum()), cfg.dim))
 
-    if workers > 1:
-        pool = ProcessPoolExecutor(workers, initializer=_init_worker, initargs=(cfg, resample))
+    if pool is not None:
         results = pool.map(_extract_one, paths, chunksize=64)
     else:
-        pool = None
-        results = (extractor(load_audio(p, cfg.sample_rate, resample=resample)) for p in paths)
+        results = (extractor(_load_transformed(p, cfg.sample_rate, resample, transform)) for p in paths)
 
     iterator = zip(paths, starts, counts, results)
     if progress:

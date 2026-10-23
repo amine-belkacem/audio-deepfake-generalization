@@ -95,3 +95,26 @@ def test_macos_shadow_csv_is_ignored(tmp_path):
     (shadow / "._meta.csv").write_bytes(b"\x00\x05binary")
     df = read_in_the_wild(root)
     assert len(df) == 3, f"ECHEC fichier __MACOSX : obtenu {len(df)} lignes, attendu 3"
+
+
+def test_base_partition_names():
+    from adg.datasets import base_partition
+
+    for name, expected in [("eval", "eval"), ("eval_trim40", "eval"), ("evalsub_band1000-2000", "eval"),
+                           ("itw_trim40", "itw"), ("train_trim40", "train"), ("dev", "dev")]:
+        got = base_partition(name)
+        assert got == expected, f"ECHEC partition de base de {name} : obtenu {got}, attendu {expected}"
+
+
+def test_derived_partition_labels_follow_the_feature_order(tmp_path):
+    from adg.datasets import LABELS_FILE, export_itw_labels, load_labels_from_index
+
+    root = make_archive(tmp_path)  # ITW_0 spoof... see make_archive: labels bona, spoof, bona
+    laptop = tmp_path / "laptop"
+    laptop.mkdir()
+    export_itw_labels(root, laptop / LABELS_FILE)
+    df = load_labels_from_index("itwsub_band0-1000", ["ITW_2", "ITW_1"], None, laptop)
+    assert list(df["utt_id"]) == ["ITW_2", "ITW_1"], f"ECHEC ordre : obtenu {list(df['utt_id'])}"
+    assert list(df["label"]) == [1, 0], f"ECHEC étiquettes : obtenu {list(df['label'])}, attendu [1, 0]"
+    with pytest.raises(ValueError, match="not in"):
+        load_labels_from_index("itw_trim40", ["ITW_9"], None, laptop)

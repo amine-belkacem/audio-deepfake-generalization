@@ -28,9 +28,12 @@ import torch
 import torchaudio
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from adg.in_the_wild import read_in_the_wild  # noqa: E402
 from adg.protocols import check_counts, load_partition  # noqa: E402
 from adg.ssl_features import Wav2Vec2LayerExtractor, extract_to_memmap  # noqa: E402
+from adg.transforms import validate  # noqa: E402
+from extract_lfcc import output_name  # noqa: E402
 
 AUDIO_DIRS = {"train": "ASVspoof2019_LA_train", "dev": "ASVspoof2019_LA_dev", "eval": "ASVspoof2019_LA_eval"}
 N_LAYERS, FEAT_DIM = 12, 2 * 768
@@ -45,7 +48,11 @@ def main() -> int:
     ap.add_argument("--partitions", nargs="+", default=["train", "dev", "eval"], choices=[*AUDIO_DIRS, "itw"])
     ap.add_argument("--limit", type=int, default=None, help="smoke test: only the first N files per partition")
     ap.add_argument("--random-weights", action="store_true", help="smoke test: untrained model, no download")
+    ap.add_argument("--transform", default="none", type=validate,
+                    help="none, trim<dB> or band:<lo>-<hi> (see adg.transforms)")
+    ap.add_argument("--subset", type=Path, default=None, help="CSV with a utt_id column")
     args = ap.parse_args()
+    keep = set(pd.read_csv(args.subset)["utt_id"]) if args.subset else None
 
     args.out.mkdir(parents=True, exist_ok=True)
     model = torchaudio.models.wav2vec2_base() if args.random_weights else None
@@ -65,23 +72,26 @@ def main() -> int:
         else:
             df = load_partition(proto_dir, part)
             check_counts(df, part)
+        if keep is not None:
+            df = df[df["utt_id"].isin(keep)]
         if args.limit is not None:
             df = df.head(args.limit)
-        df[["utt_id"]].to_csv(args.out / f"{part}_utt_ids.csv", index=False)
+        name = output_name(part, args.subset, args.transform)
+        df[["utt_id"]].to_csv(args.out / f"{name}_utt_ids.csv", index=False)
         if part == "itw":
             paths = [Path(p) for p in df["path"]]
         else:
             paths = [args.la_root / AUDIO_DIRS[part] / "flac" / f"{u}.flac" for u in df["utt_id"]]
 
         t0 = time.perf_counter()
-        extract_to_memmap(paths, args.out / f"{part}.npy", extractor, N_LAYERS, FEAT_DIM,
-                          resample=(part == "itw"))
+        extract_to_memmap(paths, args.out / f"{name}.npy", extractor, N_LAYERS, FEAT_DIM,
+                          resample=(part == "itw"), transform=args.transform)
         elapsed = time.perf_counter() - t0
         # Only meaningful for an uninterrupted run; a resumed run times the remainder.
-        info[f"{part}_seconds"] = elapsed
-        info[f"{part}_ms_per_file"] = 1000 * elapsed / len(paths)
+        info[f"{name}_seconds"] = elapsed
+        info[f"{name}_ms_per_file"] = 1000 * elapsed / len(paths)
         info_path.write_text(json.dumps(info, indent=2))
-        print(f"{part}: {len(paths)} files in {elapsed / 60:.1f} min", flush=True)
+        print(f"{name}: {len(paths)} files in {elapsed / 60:.1f} min", flush=True)
     return 0
 
 

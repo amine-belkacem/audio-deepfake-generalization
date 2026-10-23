@@ -1,0 +1,19 @@
+threshold_db,features,eval subset,eer_pct,low,high
+30,leading + trailing silence,pooled,18.219,17.909,18.572
+30,leading + trailing silence,unseen attacks,15.608,15.318,15.906
+30,file duration only,pooled,41.957,41.577,42.387
+30,file duration only,unseen attacks,41.143,40.539,41.737
+30,speech duration only,pooled,40.650,40.127,41.227
+30,speech duration only,unseen attacks,40.174,39.616,40.712
+40,leading + trailing silence,pooled,19.592,19.162,20.069
+40,leading + trailing silence,unseen attacks,18.654,18.220,19.048
+40,file duration only,pooled,41.957,41.577,42.387
+40,file duration only,unseen attacks,41.143,40.539,41.737
+40,speech duration only,pooled,44.053,43.544,44.528
+40,speech duration only,unseen attacks,44.567,43.998,45.074
+50,leading + trailing silence,pooled,45.321,44.682,46.004
+50,leading + trailing silence,unseen attacks,44.836,44.066,45.523
+50,file duration only,pooled,41.957,41.577,42.387
+50,file duration only,unseen attacks,41.143,40.539,41.737
+50,speech duration only,pooled,43.740,43.223,44.280
+50,speech duration only,unseen attacks,42.718,42.218,43.255

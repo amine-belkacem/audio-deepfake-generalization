@@ -1,0 +1,13 @@
+partition,class,quantity,q25,median,q75
+train,bonafide,lead_s_40db,0.450,0.700,0.980
+train,bonafide,trail_s_40db,0.095,0.236,0.438
+train,bonafide,duration_s,2.688,3.240,3.922
+train,spoof,lead_s_40db,0.070,0.330,0.990
+train,spoof,trail_s_40db,0.108,0.276,0.410
+train,spoof,duration_s,2.391,3.197,4.139
+eval,bonafide,lead_s_40db,0.500,0.740,1.000
+eval,bonafide,trail_s_40db,0.165,0.318,0.573
+eval,bonafide,duration_s,2.643,3.196,3.921
+eval,spoof,lead_s_40db,0.020,0.040,0.120
+eval,spoof,trail_s_40db,0.031,0.162,0.307
+eval,spoof,duration_s,1.981,2.753,3.811

@@ -55,26 +55,37 @@ def main() -> int:
     ap.add_argument("--epochs", type=int, default=20)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--max-utts", type=int, default=None, help="smoke test: first N utterances of each split")
+    ap.add_argument("--train-part", default="train", help="e.g. train_trim40 (milestone 4)")
+    ap.add_argument("--dev-part", default="dev", help="e.g. dev_trim40 (milestone 4)")
+    ap.add_argument("--eval-parts", nargs="+", default=None,
+                    help="feature folders to score; default: eval and itw when they exist")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
-    train_frames, _ = open_partition(args.feat_dir / "train")
+    train_frames, _ = open_partition(args.feat_dir / args.train_part)
     mean, std = chunked_mean_std(train_frames, chunk=500_000)  # per-dimension, train only
-    eval_parts = [p for p in ("eval", "itw") if (args.feat_dir / p / "index.csv").exists()]
+    if args.eval_parts is None:
+        eval_parts = [p for p in ("eval", "itw") if (args.feat_dir / p / "index.csv").exists()]
+    else:
+        eval_parts = args.eval_parts
+        missing = [p for p in eval_parts if not (args.feat_dir / p / "index.csv").exists()]
+        if missing:
+            raise SystemExit(f"no features for {missing} in {args.feat_dir}")
     print(f"evaluating on: {eval_parts}", flush=True)
 
     for seed in args.seeds:
         print(f"seed {seed}", flush=True)
         cfg = TrainConfig(epochs=args.epochs, lr=args.lr, batch_size=64, patience=5, seed=seed)
-        train_ds, _ = crop_dataset(args.feat_dir, "train", args, mean, std, train=True, seed=seed)
-        dev_ds, _ = crop_dataset(args.feat_dir, "dev", args, mean, std, train=False)
+        train_ds, _ = crop_dataset(args.feat_dir, args.train_part, args, mean, std, train=True, seed=seed)
+        dev_ds, _ = crop_dataset(args.feat_dir, args.dev_part, args, mean, std, train=False)
         set_seed(seed)  # weight initialisation happens here
         model = LCNN()
         t0 = time.perf_counter()
         result = train_model(model, train_ds, dev_ds, cfg, device=args.device)
         info = {"seed": seed, "config": asdict(cfg), "best_epoch": result.best_epoch,
                 "best_dev_eer": result.best_dev_eer, "train_seconds": time.perf_counter() - t0,
-                "history": result.history, "device": args.device, "crop_frames": CROP_FRAMES}
+                "history": result.history, "device": args.device, "crop_frames": CROP_FRAMES,
+                "train_part": args.train_part, "dev_part": args.dev_part}
         torch.save(model.state_dict(), args.out / f"lcnn_seed{seed}.pt")
         for part in eval_parts:
             ds, ids = crop_dataset(args.feat_dir, part, args, mean, std, train=False)

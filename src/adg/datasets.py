@@ -38,9 +38,28 @@ def load_labels(partition: str, la_root: str | Path = "data/LA",
     raise ValueError(f"unknown partition {partition!r}")
 
 
+def base_partition(name: str) -> str:
+    """'eval' -> 'eval', 'eval_trim40' -> 'eval', 'evalsub_band1000-2000' -> 'eval'."""
+    head = name.split("_", 1)[0]
+    return head[:-3] if head.endswith("sub") else head
+
+
 def load_labels_from_index(partition: str, feat_utt_ids: list[str], la_root, itw_root) -> pd.DataFrame:
-    """Labels aligned with the row order of a feature file; raises if they differ."""
-    labels = load_labels(partition, la_root, itw_root)
-    if labels["utt_id"].tolist() != list(feat_utt_ids):
-        raise ValueError(f"{partition}: feature rows are not in the same order as the labels")
-    return labels
+    """Labels in the row order of a feature file.
+
+    A full partition must match the protocol order exactly. A derived one
+    (subset and / or transform, e.g. 'evalsub_band1000-2000') may hold any subset
+    of its base partition, in any order, but every id must exist exactly once.
+    """
+    labels = load_labels(base_partition(partition), la_root, itw_root)
+    ids = list(feat_utt_ids)
+    if partition in (*ASVSPOOF_PARTITIONS, "itw"):
+        if labels["utt_id"].tolist() != ids:
+            raise ValueError(f"{partition}: feature rows are not in the same order as the labels")
+        return labels
+    if len(set(ids)) != len(ids):
+        raise ValueError(f"{partition}: duplicated utterance ids in the feature index")
+    unknown = set(ids) - set(labels["utt_id"])
+    if unknown:
+        raise ValueError(f"{partition}: {len(unknown)} ids not in {base_partition(partition)}, e.g. {sorted(unknown)[:3]}")
+    return labels.set_index("utt_id").loc[ids].reset_index()
