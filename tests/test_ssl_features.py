@@ -96,3 +96,17 @@ def test_shape_mismatch_on_resume_is_rejected(tmp_path, extractor):
     sf.write(p, noise(0.2, seed=0).numpy(), SR)
     with pytest.raises(ValueError, match="expected"):
         extract_to_memmap([p], out, extractor, 12, 1536, progress=False)
+
+
+def test_parallel_loading_gives_the_same_features(tmp_path, extractor):
+    # Workers only read and transform the audio; the model runs in the main process,
+    # so the result must be bit-identical to the sequential run.
+    paths = []
+    for i in range(5):
+        p = tmp_path / f"u{i}.flac"
+        sf.write(p, noise(0.4, seed=30 + i).numpy(), SR)
+        paths.append(p)
+    extract_to_memmap(paths, tmp_path / "seq.npy", extractor, 12, 1536, progress=False, transform="g711")
+    extract_to_memmap(paths, tmp_path / "par.npy", extractor, 12, 1536, progress=False, transform="g711", workers=2)
+    assert np.array_equal(np.load(tmp_path / "seq.npy"), np.load(tmp_path / "par.npy")), \
+        "ECHEC chargement parallèle : caractéristiques différentes"

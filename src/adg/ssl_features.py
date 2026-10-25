@@ -73,13 +73,24 @@ class Wav2Vec2LayerExtractor:
         return pool_layers(layers)
 
 
+def _load_for_ssl(job: tuple[str, bool, str]) -> np.ndarray:
+    """Worker side of extract_to_memmap: read + transform one file (CPU work, ffmpeg included)."""
+    path, resample, transform = job
+    torch.set_num_threads(1)
+    return apply_transform(load_audio(path, SAMPLE_RATE, resample=resample), SAMPLE_RATE, transform).numpy()
+
+
 def extract_to_memmap(paths: list[Path], out_path: str | Path, extractor: Wav2Vec2LayerExtractor,
                       n_layers: int, feat_dim: int, checkpoint_every: int = 500,
-                      progress: bool = True, resample: bool = False, transform: str = "none") -> None:
+                      progress: bool = True, resample: bool = False, transform: str = "none",
+                      workers: int = 1) -> None:
     """Fill out_path (.npy, float16, shape (N, n_layers, feat_dim)) one file at a time.
 
     A companion "<out>.done.npy" boolean mask records which rows are finished, so
     a Kaggle session that hits its time limit can be resumed where it stopped.
+    With workers > 1, reading and transforming the audio (codecs go through
+    ffmpeg, which is slow) runs in worker processes while the model runs here;
+    without it the GPU would wait for ffmpeg most of the time.
     """
     validate_transform(transform)
     out_path = Path(out_path)
@@ -102,16 +113,28 @@ def extract_to_memmap(paths: list[Path], out_path: str | Path, extractor: Wav2Ve
         from tqdm import tqdm
         iterator = tqdm(todo, desc=out_path.stem, mininterval=30)
 
-    for k, i in enumerate(iterator, start=1):
-        x = apply_transform(load_audio(paths[i], SAMPLE_RATE, resample=resample), SAMPLE_RATE, transform)
-        pooled = extractor(x)
-        if pooled.shape != shape[1:]:
-            raise RuntimeError(f"{paths[i].name}: got {pooled.shape}, expected {shape[1:]}")
-        feats[i] = pooled
-        done[i] = True
-        if k % checkpoint_every == 0:
-            feats.flush()
-            np.save(done_path, done)
+    jobs = [(str(paths[i]), resample, transform) for i in todo]
+    if workers > 1:
+        from concurrent.futures import ProcessPoolExecutor
+        pool = ProcessPoolExecutor(workers)
+        waves = pool.map(_load_for_ssl, jobs, chunksize=16)
+    else:
+        pool = None
+        waves = map(_load_for_ssl, jobs)
+
+    try:
+        for k, (i, wave) in enumerate(zip(iterator, waves), start=1):
+            pooled = extractor(torch.from_numpy(wave))
+            if pooled.shape != shape[1:]:
+                raise RuntimeError(f"{paths[i].name}: got {pooled.shape}, expected {shape[1:]}")
+            feats[i] = pooled
+            done[i] = True
+            if k % checkpoint_every == 0:
+                feats.flush()
+                np.save(done_path, done)
+    finally:
+        if pool is not None:
+            pool.shutdown(cancel_futures=True)
     feats.flush()
     np.save(done_path, done)
     if not done.all():

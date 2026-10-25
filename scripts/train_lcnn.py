@@ -34,7 +34,7 @@ CROP_FRAMES = 400  # 4 s at a 10 ms hop
 
 def crop_dataset(feat_dir: Path, part: str, args, mean, std, train: bool, seed: int = 0):
     frames, index = open_partition(feat_dir / part)
-    labels = load_labels_from_index(part, index["utt_id"], args.la_root, args.itw_root)
+    labels = load_labels_from_index(part, index["utt_id"], args.la_root, args.itw_root, args.asv21_root)
     if args.max_utts is not None:
         # ASVspoof protocols list bona fide first, so take a strided subset to keep both classes
         keep = np.linspace(0, len(index) - 1, min(args.max_utts, len(index))).astype(int)
@@ -42,6 +42,28 @@ def crop_dataset(feat_dir: Path, part: str, args, mean, std, train: bool, seed: 
     ds = FrameCropDataset(frames, index["start"].to_numpy(), index["n_frames"].to_numpy(),
                           labels["label"].to_numpy(), mean, std, n_frames=CROP_FRAMES, train=train, seed=seed)
     return ds, index["utt_id"]
+
+
+class Concat(torch.utils.data.ConcatDataset):
+    """ConcatDataset that keeps the .labels attribute train_model needs (class weights, dev EER)."""
+
+    def __init__(self, datasets):
+        super().__init__(datasets)
+        self.labels = np.concatenate([d.labels for d in datasets])
+
+
+def pooled_mean_std(feat_dir: Path, parts: list[str]) -> tuple[np.ndarray, np.ndarray]:
+    """Per-dimension mean / std over the frames of several partitions taken together."""
+    n_tot, s1, s2 = 0, 0.0, 0.0
+    for part in parts:
+        frames, _ = open_partition(feat_dir / part)
+        m, s = chunked_mean_std(frames, chunk=500_000)
+        n = frames.shape[0]
+        n_tot += n
+        s1 = s1 + n * m.astype(np.float64)
+        s2 = s2 + n * (s.astype(np.float64) ** 2 + m.astype(np.float64) ** 2)
+    mean = s1 / n_tot
+    return mean.astype(np.float32), np.sqrt(np.maximum(s2 / n_tot - mean ** 2, 1e-12)).astype(np.float32)
 
 
 def main() -> int:
@@ -55,15 +77,16 @@ def main() -> int:
     ap.add_argument("--epochs", type=int, default=20)
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--max-utts", type=int, default=None, help="smoke test: first N utterances of each split")
-    ap.add_argument("--train-part", default="train", help="e.g. train_trim40 (milestone 4)")
-    ap.add_argument("--dev-part", default="dev", help="e.g. dev_trim40 (milestone 4)")
+    ap.add_argument("--train-part", nargs="+", default=["train"],
+                    help="one or more feature folders, concatenated (e.g. train_trim40 train_trim40-randchan)")
+    ap.add_argument("--dev-part", nargs="+", default=["dev"], help="one or more, concatenated")
+    ap.add_argument("--asv21-root", type=Path, default=Path("data/asvspoof2021"))
     ap.add_argument("--eval-parts", nargs="+", default=None,
                     help="feature folders to score; default: eval and itw when they exist")
     args = ap.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
 
-    train_frames, _ = open_partition(args.feat_dir / args.train_part)
-    mean, std = chunked_mean_std(train_frames, chunk=500_000)  # per-dimension, train only
+    mean, std = pooled_mean_std(args.feat_dir, args.train_part)  # per-dimension, training data only
     if args.eval_parts is None:
         eval_parts = [p for p in ("eval", "itw") if (args.feat_dir / p / "index.csv").exists()]
     else:
@@ -76,8 +99,9 @@ def main() -> int:
     for seed in args.seeds:
         print(f"seed {seed}", flush=True)
         cfg = TrainConfig(epochs=args.epochs, lr=args.lr, batch_size=64, patience=5, seed=seed)
-        train_ds, _ = crop_dataset(args.feat_dir, args.train_part, args, mean, std, train=True, seed=seed)
-        dev_ds, _ = crop_dataset(args.feat_dir, args.dev_part, args, mean, std, train=False)
+        train_ds = Concat([crop_dataset(args.feat_dir, p, args, mean, std, train=True, seed=seed + 1000 * k)[0]
+                           for k, p in enumerate(args.train_part)])
+        dev_ds = Concat([crop_dataset(args.feat_dir, p, args, mean, std, train=False)[0] for p in args.dev_part])
         set_seed(seed)  # weight initialisation happens here
         model = LCNN()
         t0 = time.perf_counter()

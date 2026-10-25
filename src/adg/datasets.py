@@ -6,11 +6,14 @@ from pathlib import Path
 
 import pandas as pd
 
+from . import asvspoof2021
 from .in_the_wild import read_in_the_wild
 from .protocols import load_partition
 
 ASVSPOOF_PARTITIONS = ("train", "dev", "eval")
 LABELS_FILE = "itw_labels.csv"
+ASV21_LABELS_FILE = "asv21_labels.csv"
+ASV21_ROOT = Path("data/asvspoof2021")
 LABEL_COLUMNS = ["utt_id", "attack", "key", "label"]
 
 
@@ -21,19 +24,36 @@ def export_itw_labels(itw_root: str | Path, out_path: str | Path) -> int:
     return len(df)
 
 
+def export_asv21_labels(root: str | Path, out_path: str | Path) -> int:
+    """ASVspoof 2021 LA label + channel table, for evaluating on the laptop without the audio."""
+    df = asvspoof2021.read_metadata(Path(root) / asvspoof2021.METADATA)
+    df[["utt_id", "attack", "key", "label", "codec", "transmission", "condition", "trim", "subset"]].to_csv(
+        out_path, index=False)
+    return len(df)
+
+
+def _read_exported(path: Path) -> pd.DataFrame:
+    df = pd.read_csv(path, dtype={"utt_id": str, "attack": str, "key": str})
+    if set(df["key"]) - {"bonafide", "spoof"} or (df["label"] != (df["key"] == "bonafide")).any():
+        raise ValueError(f"{path}: inconsistent key / label columns")
+    return df
+
+
 def load_labels(partition: str, la_root: str | Path = "data/LA",
-                itw_root: str | Path = "data/in_the_wild") -> pd.DataFrame:
-    """Protocol-like table (utt_id, attack, key, label) for an ASVspoof partition or 'itw'."""
+                itw_root: str | Path = "data/in_the_wild", asv21_root: str | Path = ASV21_ROOT) -> pd.DataFrame:
+    """Protocol-like table (utt_id, attack, key, label) for an ASVspoof 2019 partition, 'itw' or 'asv21'."""
+    if partition == "asv21":
+        exported = Path(asv21_root) / ASV21_LABELS_FILE
+        if exported.is_file():
+            return _read_exported(exported)
+        return asvspoof2021.read_metadata(Path(asv21_root) / asvspoof2021.METADATA)
     if partition in ASVSPOOF_PARTITIONS:
         return load_partition(Path(la_root) / "ASVspoof2019_LA_cm_protocols", partition)
     if partition == "itw":
         # On my laptop only the label table exported from Kaggle exists, not the audio.
         exported = Path(itw_root) / LABELS_FILE
         if exported.is_file():
-            df = pd.read_csv(exported, dtype={"utt_id": str, "attack": str, "key": str})
-            if set(df["key"]) - {"bonafide", "spoof"} or (df["label"] != (df["key"] == "bonafide")).any():
-                raise ValueError(f"{exported}: inconsistent key / label columns")
-            return df
+            return _read_exported(exported)
         return read_in_the_wild(itw_root)
     raise ValueError(f"unknown partition {partition!r}")
 
@@ -44,16 +64,17 @@ def base_partition(name: str) -> str:
     return head[:-3] if head.endswith("sub") else head
 
 
-def load_labels_from_index(partition: str, feat_utt_ids: list[str], la_root, itw_root) -> pd.DataFrame:
+def load_labels_from_index(partition: str, feat_utt_ids: list[str], la_root, itw_root,
+                           asv21_root=ASV21_ROOT) -> pd.DataFrame:
     """Labels in the row order of a feature file.
 
     A full partition must match the protocol order exactly. A derived one
     (subset and / or transform, e.g. 'evalsub_band1000-2000') may hold any subset
     of its base partition, in any order, but every id must exist exactly once.
     """
-    labels = load_labels(base_partition(partition), la_root, itw_root)
+    labels = load_labels(base_partition(partition), la_root, itw_root, asv21_root)
     ids = list(feat_utt_ids)
-    if partition in (*ASVSPOOF_PARTITIONS, "itw"):
+    if partition in (*ASVSPOOF_PARTITIONS, "itw", "asv21"):
         if labels["utt_id"].tolist() != ids:
             raise ValueError(f"{partition}: feature rows are not in the same order as the labels")
         return labels

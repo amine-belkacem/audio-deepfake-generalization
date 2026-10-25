@@ -9,6 +9,10 @@ features/
 # ...except the milestone 1 GMMs (0.5 MB each), reused on Kaggle for In-the-Wild
 !results/lfcc_gmm_*/gmm_*.npz
 *.pt
+# ...except the milestone 4 models reused on Kaggle in milestone 5 (2.2 MB + 1 MB)
+!results/m4/lfcc_lcnn_trim40/*.pt
+!results/m4/lfcc_lcnn_trim40/lfcc_norm.npz
+!results/m4/lfcc_gmm/gmm_*_trimmed_40db.npz
 
 # Python
 .venv/

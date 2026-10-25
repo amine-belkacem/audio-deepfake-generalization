@@ -29,6 +29,7 @@ import torchaudio
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from adg import asvspoof2021  # noqa: E402
 from adg.in_the_wild import read_in_the_wild  # noqa: E402
 from adg.protocols import check_counts, load_partition  # noqa: E402
 from adg.ssl_features import Wav2Vec2LayerExtractor, extract_to_memmap  # noqa: E402
@@ -45,12 +46,14 @@ def main() -> int:
     ap.add_argument("--itw-root", type=Path, default=Path("data/in_the_wild"))
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    ap.add_argument("--partitions", nargs="+", default=["train", "dev", "eval"], choices=[*AUDIO_DIRS, "itw"])
+    ap.add_argument("--partitions", nargs="+", default=["train", "dev", "eval"], choices=[*AUDIO_DIRS, "itw", "asv21"])
     ap.add_argument("--limit", type=int, default=None, help="smoke test: only the first N files per partition")
     ap.add_argument("--random-weights", action="store_true", help="smoke test: untrained model, no download")
     ap.add_argument("--transform", default="none", type=validate,
                     help="none, trim<dB> or band:<lo>-<hi> (see adg.transforms)")
     ap.add_argument("--subset", type=Path, default=None, help="CSV with a utt_id column")
+    ap.add_argument("--asv21-root", type=Path, default=Path("data/asvspoof2021"))
+    ap.add_argument("--workers", type=int, default=1, help="processes reading / transforming the audio")
     args = ap.parse_args()
     keep = set(pd.read_csv(args.subset)["utt_id"]) if args.subset else None
 
@@ -69,6 +72,9 @@ def main() -> int:
     for part in args.partitions:
         if part == "itw":
             df = read_in_the_wild(args.itw_root)
+        elif part == "asv21":
+            df = asvspoof2021.read_metadata(args.asv21_root / asvspoof2021.METADATA)
+            df["path"] = [str(args.asv21_root / asvspoof2021.AUDIO / f"{u}.flac") for u in df["utt_id"]]
         else:
             df = load_partition(proto_dir, part)
             check_counts(df, part)
@@ -78,14 +84,14 @@ def main() -> int:
             df = df.head(args.limit)
         name = output_name(part, args.subset, args.transform)
         df[["utt_id"]].to_csv(args.out / f"{name}_utt_ids.csv", index=False)
-        if part == "itw":
+        if part in ("itw", "asv21"):
             paths = [Path(p) for p in df["path"]]
         else:
             paths = [args.la_root / AUDIO_DIRS[part] / "flac" / f"{u}.flac" for u in df["utt_id"]]
 
         t0 = time.perf_counter()
         extract_to_memmap(paths, args.out / f"{name}.npy", extractor, N_LAYERS, FEAT_DIM,
-                          resample=(part == "itw"), transform=args.transform)
+                          resample=(part == "itw"), transform=args.transform, workers=args.workers)
         elapsed = time.perf_counter() - t0
         # Only meaningful for an uninterrupted run; a resumed run times the remainder.
         info[f"{name}_seconds"] = elapsed

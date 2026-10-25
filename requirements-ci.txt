@@ -10,3 +10,4 @@ scikit-learn
 soundfile
 tqdm
 pytest
+imageio-ffmpeg

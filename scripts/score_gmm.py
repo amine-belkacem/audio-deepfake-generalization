@@ -23,9 +23,11 @@ def main() -> int:
     ap.add_argument("--gmm-dir", type=Path, required=True)
     ap.add_argument("--feat-dir", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--gmm-suffix", default="", help="e.g. _trimmed_40db for the milestone 4 GMMs")
     args = ap.parse_args()
 
-    bona, spoof = DiagGMM.load(args.gmm_dir / "gmm_bona.npz"), DiagGMM.load(args.gmm_dir / "gmm_spoof.npz")
+    bona = DiagGMM.load(args.gmm_dir / f"gmm_bona{args.gmm_suffix}.npz")
+    spoof = DiagGMM.load(args.gmm_dir / f"gmm_spoof{args.gmm_suffix}.npz")
     frames, index = open_partition(args.feat_dir)
     llr = utterance_llr(frames, index["start"].to_numpy(), index["n_frames"].to_numpy(), bona, spoof)
     args.out.parent.mkdir(parents=True, exist_ok=True)
