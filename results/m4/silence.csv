@@ -1,0 +1,24 @@
+system,test,condition,runs,eer_mean,eer_std,text
+LFCC + GMM,eval,as is,1,10.4822,,"10.48 [10.16, 10.78]"
+LFCC + GMM,eval,"trimmed, same model",1,20.5732,,"20.57 [20.10, 21.03]"
+LFCC + GMM,eval,"trimmed, retrained",1,21.2774,,"21.28 [20.83, 21.71]"
+LFCC + GMM,itw,as is,1,36.7197,,"36.72 [36.14, 37.29]"
+LFCC + GMM,itw,"trimmed, same model",1,41.1149,,"41.11 [40.58, 41.70]"
+LFCC + LCNN,eval,as is,3,4.8625,0.4207,4.86 ± 0.42
+LFCC + LCNN,eval,"trimmed, same model",3,21.5308,1.0917,21.53 ± 1.09
+LFCC + LCNN,eval,"trimmed, retrained",3,17.4025,1.5545,17.40 ± 1.55
+LFCC + LCNN,itw,as is,3,72.7024,1.6428,72.70 ± 1.64
+LFCC + LCNN,itw,"trimmed, same model",3,76.7780,2.0122,76.78 ± 2.01
+LFCC + LCNN,itw,"trimmed, retrained",3,82.4559,4.1106,82.46 ± 4.11
+wav2vec 2.0 + probe (layer 3),eval,as is,1,1.2101,,"1.21 [1.08, 1.32]"
+wav2vec 2.0 + probe (layer 3),eval,"trimmed, same model",1,8.1967,,"8.20 [7.90, 8.50]"
+wav2vec 2.0 + probe (layer 3),eval,"trimmed, retrained",1,7.6816,,"7.68 [7.42, 7.95]"
+wav2vec 2.0 + probe (layer 3),itw,as is,1,22.4361,,"22.44 [21.94, 22.85]"
+wav2vec 2.0 + probe (layer 3),itw,"trimmed, same model",1,21.7065,,"21.71 [21.24, 22.14]"
+wav2vec 2.0 + probe (layer 3),itw,"trimmed, retrained",1,22.7068,,"22.71 [22.20, 23.13]"
+wav2vec 2.0 + MLP,eval,as is,3,1.6419,0.2047,1.64 ± 0.20
+wav2vec 2.0 + MLP,eval,"trimmed, same model",3,11.5872,0.6263,11.59 ± 0.63
+wav2vec 2.0 + MLP,eval,"trimmed, retrained",3,8.7194,0.7763,8.72 ± 0.78
+wav2vec 2.0 + MLP,itw,as is,3,26.1788,0.2406,26.18 ± 0.24
+wav2vec 2.0 + MLP,itw,"trimmed, same model",3,27.6775,0.4226,27.68 ± 0.42
+wav2vec 2.0 + MLP,itw,"trimmed, retrained",3,28.5828,0.5847,28.58 ± 0.58

@@ -87,13 +87,37 @@ What I take from it:
 Intervals, min t-DCF, per-attack results and the Kaggle mishaps on the way are in
 [docs/M3_comparison.md](docs/M3_comparison.md).
 
+### Milestone 4: are the detectors listening to the voice?
+
+**Silence alone is a detector.** A logistic regression on the length of the leading and
+trailing silence, which never hears a word, gets **19.6 % EER** on ASVspoof eval. Median
+leading silence: 0.74 s for real voices, 0.04 s for spoofs.
+
+![EER with and without silence](results/m4/silence_eer.png)
+
+| System | eval, as is | eval, silence removed (retrained) | In-the-Wild, as is | In-the-Wild, silence removed (retrained) |
+|---|---|---|---|---|
+| LFCC + GMM | 10.48 | 21.28 | 36.72 | |
+| LFCC + LCNN | 4.86 ± 0.42 | 17.40 ± 1.55 | 72.70 ± 1.64 | 82.46 ± 4.11 |
+| wav2vec 2.0 + probe (layer 3) | 1.21 | **7.68** | 22.44 | 22.71 |
+| wav2vec 2.0 + MLP | 1.64 ± 0.20 | 8.72 ± 0.78 | 26.18 ± 0.24 | 28.58 ± 0.58 |
+
+- **Every system used the silence**, wav2vec 2.0 included: about 8 % is a more honest
+  ASVspoof figure for it than 1.2 %. In-the-Wild, which has no such leak, barely moves.
+- **The LCNN's failure on In-the-Wild is not about silence**: trimming makes it worse.
+- **wav2vec 2.0 depends almost only on 0–1 kHz**: removing that band multiplies its EER by
+  7 to 9, removing any band above 2 kHz changes nothing. Voice or background noise in that
+  band? Not answered yet.
+
+Details, the band study and the limits are in [docs/M4_shortcuts.md](docs/M4_shortcuts.md).
+
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Foundations: metrics, protocols, tests, CI | done |
 | M1 | LFCC + GMM baseline, reproduce the official EER | done, official EER not reproduced (see above) |
 | M2 | wav2vec 2.0 layer-wise probing | done |
 | M3 | Full comparison, 3 seeds, In-the-Wild | done |
-| M4 | Silence shortcut and frequency-band analysis | |
+| M4 | Silence shortcut and frequency-band analysis | done |
 | M5 | Telephone-channel robustness | |
 | M6 | Raspberry Pi 5 inference (optional) | |
 

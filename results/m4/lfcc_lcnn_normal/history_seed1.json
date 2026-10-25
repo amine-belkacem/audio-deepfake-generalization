@@ -1,0 +1,99 @@
+{
+  "seed": 1,
+  "config": {
+    "epochs": 20,
+    "lr": 0.001,
+    "batch_size": 64,
+    "weight_decay": 0.0001,
+    "patience": 5,
+    "seed": 1
+  },
+  "best_epoch": 6,
+  "best_dev_eer": 0.005505595050804956,
+  "train_seconds": 720.6957111829979,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.3436436232113552,
+      "dev_eer": 0.011784889081905826,
+      "seconds": 70.19916944899887
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.10314979359761557,
+      "dev_eer": 0.012182951345645484,
+      "seconds": 65.18797725200056
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.06690634439835758,
+      "dev_eer": 0.012160525798462137,
+      "seconds": 65.07967332399858
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.04836450307512411,
+      "dev_eer": 0.010147788932580552,
+      "seconds": 64.94214143600038
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.02597338789480155,
+      "dev_eer": 0.005881231767361267,
+      "seconds": 64.98709270900144
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.03094158829701359,
+      "dev_eer": 0.005505595050804956,
+      "seconds": 64.75184336999882
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.04487892220677535,
+      "dev_eer": 0.011431677912532915,
+      "seconds": 65.1996386489991
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.02193238641345001,
+      "dev_eer": 0.009020878782911674,
+      "seconds": 64.6470955679979
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.02890031621971484,
+      "dev_eer": 0.012160525798462137,
+      "seconds": 65.18355190900184
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.025029563292392972,
+      "dev_eer": 0.016892421868971177,
+      "seconds": 65.3643369570018
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.016942582797697708,
+      "dev_eer": 0.008645242066355419,
+      "seconds": 65.12648052800068
+    }
+  ],
+  "device": "cuda",
+  "crop_frames": 400,
+  "train_part": "train",
+  "dev_part": "dev",
+  "score_eval_seconds": 48.5136144829994,
+  "score_itw_seconds": 24.468729987002007,
+  "score_eval_trim40_seconds": 48.048893349001446,
+  "score_itw_trim40_seconds": 23.48317773999952,
+  "score_evalsub_seconds": 4.221328438001365,
+  "score_evalsub_band0-1000_seconds": 4.077184156998555,
+  "score_evalsub_band1000-2000_seconds": 4.3684906769994996,
+  "score_evalsub_band2000-3000_seconds": 4.074027210001077,
+  "score_evalsub_band3000-4000_seconds": 4.266892786999961,
+  "score_evalsub_band4000-5000_seconds": 4.285737097001402,
+  "score_evalsub_band5000-6000_seconds": 4.219700449000811,
+  "score_evalsub_band6000-7000_seconds": 4.148441266002919,
+  "score_evalsub_band7000-8000_seconds": 4.375261370001681
+}
