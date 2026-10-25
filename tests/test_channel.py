@@ -172,3 +172,22 @@ def test_randchan_is_deterministic_and_spreads_over_the_channels():
     assert torch.equal(a, b), "ECHEC randchan : même fichier, sorties différentes"
     picks = {CHANNELS[zlib.crc32(sine(200 + k, seconds=0.1).tobytes()) % len(CHANNELS)] for k in range(200)}
     assert picks == set(CHANNELS), f"ECHEC randchan : canaux jamais tirés {sorted(set(CHANNELS) - picks)}"
+
+
+def test_each_codec_picks_a_binary_that_has_it(monkeypatch):
+    # Simulates Kaggle: two builds, each missing one codec. Every encoder must be
+    # routed to a build that has it, and an encoder nobody has must raise.
+    import adg.channel as ch
+
+    fake = {"ubuntu": frozenset({"libgsm", "libopus"}), "imageio": frozenset({"libopencore_amrnb", "libopus"})}
+    monkeypatch.setattr(ch, "ffmpeg_candidates", lambda: ("ubuntu", "imageio"))
+    monkeypatch.setattr(ch, "_encoders", lambda exe: fake[exe])
+    ch.ffmpeg_for.cache_clear()
+    try:
+        got = {e: ch.ffmpeg_for(e) for e in ("libgsm", "libopencore_amrnb", "libopus")}
+        expected = {"libgsm": "ubuntu", "libopencore_amrnb": "imageio", "libopus": "ubuntu"}
+        assert got == expected, f"ECHEC choix du binaire : obtenu {got}, attendu {expected}"
+        with pytest.raises(RuntimeError, match="no ffmpeg with a libfdk_aac"):
+            ch.ffmpeg_for("libfdk_aac")
+    finally:
+        ch.ffmpeg_for.cache_clear()

@@ -122,25 +122,55 @@ def packet_loss(x: np.ndarray, rate: float, sr: int = SR, frame_ms: float = 20.0
 
 
 @lru_cache(maxsize=1)
-def ffmpeg_exe() -> str:
-    """ADG_FFMPEG if set (to pick a build with the needed codecs), else imageio-ffmpeg, else PATH."""
+def ffmpeg_candidates() -> tuple[str, ...]:
+    """Every ffmpeg binary available, in order of preference.
+
+    ADG_FFMPEG_PATHS (several paths separated by os.pathsep) if set, then the
+    imageio-ffmpeg binary, then the one on PATH. Several are kept because no
+    single build has every codec everywhere: on Kaggle the Ubuntu ffmpeg has
+    GSM and Opus but not AMR-NB, the imageio-ffmpeg build has AMR-NB and Opus
+    but not GSM.
+    """
     import os
-    if os.environ.get("ADG_FFMPEG"):
-        return os.environ["ADG_FFMPEG"]
+    found: list[str] = []
+    if os.environ.get("ADG_FFMPEG_PATHS"):
+        found += [p for p in os.environ["ADG_FFMPEG_PATHS"].split(os.pathsep) if p]
     try:
         import imageio_ffmpeg
-        return imageio_ffmpeg.get_ffmpeg_exe()
+        found.append(imageio_ffmpeg.get_ffmpeg_exe())
     except ImportError:
-        exe = shutil.which("ffmpeg")
-        if exe is None:
-            raise RuntimeError("no ffmpeg binary: pip install imageio-ffmpeg") from None
-        return exe
+        pass
+    if shutil.which("ffmpeg"):
+        found.append(shutil.which("ffmpeg"))
+    unique = tuple(dict.fromkeys(found))
+    if not unique:
+        raise RuntimeError("no ffmpeg binary: pip install imageio-ffmpeg")
+    return unique
+
+
+def ffmpeg_exe() -> str:
+    """The preferred ffmpeg (used where any build will do, e.g. pcm_mulaw in the tests)."""
+    return ffmpeg_candidates()[0]
 
 
 @lru_cache(maxsize=None)
+def _encoders(exe: str) -> frozenset[str]:
+    out = subprocess.run([exe, "-hide_banner", "-encoders"], capture_output=True, text=True).stdout
+    return frozenset(line.split()[1] for line in out.splitlines() if len(line.split()) > 1)
+
+
+@lru_cache(maxsize=None)
+def ffmpeg_for(encoder: str) -> str:
+    """First ffmpeg that has this encoder. The same binary also decodes, so a
+    codec never mixes two builds."""
+    for exe in ffmpeg_candidates():
+        if encoder in _encoders(exe):
+            return exe
+    raise RuntimeError(f"no ffmpeg with a {encoder} encoder among {list(ffmpeg_candidates())}")
+
+
 def has_encoder(name: str) -> bool:
-    out = subprocess.run([ffmpeg_exe(), "-hide_banner", "-encoders"], capture_output=True, text=True).stdout
-    return any(line.split()[1:2] == [name] for line in out.splitlines() if len(line.split()) > 1)
+    return any(name in _encoders(exe) for exe in ffmpeg_candidates())
 
 
 # name -> (encoder, encoder sample rate, extra encoder args, container)
@@ -158,10 +188,8 @@ def ffmpeg_codec(x: np.ndarray, codec: str, sr: int = SR) -> np.ndarray:
     if codec not in CODECS:
         raise ValueError(f"unknown codec {codec!r}, expected one of {sorted(CODECS)}")
     encoder, enc_sr, extra, container = CODECS[codec]
-    if not has_encoder(encoder):
-        raise RuntimeError(f"this ffmpeg has no {encoder} encoder")
     pcm = np.asarray(x, dtype=np.float32).tobytes()
-    base = [ffmpeg_exe(), "-hide_banner", "-loglevel", "error"]
+    base = [ffmpeg_for(encoder), "-hide_banner", "-loglevel", "error"]
     enc = subprocess.run(base + ["-f", "f32le", "-ar", str(sr), "-ac", "1", "-i", "pipe:0",
                                  "-ar", str(enc_sr), "-c:a", encoder, *extra, "-f", container, "pipe:1"],
                          input=pcm, capture_output=True, check=True).stdout
