@@ -6,7 +6,7 @@ dataset from its official source into `data/` (ignored by git).
 | Dataset | Used for | Source | Licence |
 |---|---|---|---|
 | ASVspoof 2019 LA | train / dev / eval, main experiments | [Edinburgh DataShare, doi:10.7488/ds/2555](https://doi.org/10.7488/ds/2555) (`LA.zip`, 7.12 GB) | [ODC-By 1.0](https://opendatacommons.org/licenses/by/1-0/) (checked in `LICENSE_text.txt` of the release) |
-| ASVspoof 2021 LA (eval) | real telephony / VoIP channels (milestone 5) | [Zenodo record 4837263](https://zenodo.org/record/4837263) | ODC-By, according to the organisers' 2022 announcement. Still to be confirmed on the Zenodo page before use |
+| ASVspoof 2021 LA (eval) | real telephony / VoIP channels (milestone 5), **not used in the end** | audio: [Zenodo record 4837263](https://zenodo.org/record/4837263) (7.8 GB); labels and channel metadata: `LA-keys-full.tar.gz` on asvspoof.org | ODC-By 1.0 (checked on the Zenodo page). asvspoof.org answered HTTP 503 throughout milestone 5, so the labels could not be fetched and this set was skipped |
 | In-the-Wild | out-of-domain test (milestone 3) | [Hugging Face `mueller91/In-The-Wild`](https://huggingface.co/datasets/mueller91/In-The-Wild) (`release_in_the_wild.zip`, 8.16 GB); also listed on the [Fraunhofer AISEC page](https://deepfake-demo.aisec.fraunhofer.de/in_the_wild) | The two sources disagree: CC-BY-SA 4.0 on the Hugging Face card, Apache 2.0 on the Fraunhofer page when I checked it. Both allow what I do here (use the data, publish scores and metrics with attribution, never redistribute the audio) |
 
 ## Kaggle runs and the community copy of ASVspoof 2019

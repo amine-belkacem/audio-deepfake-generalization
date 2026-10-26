@@ -1,0 +1,78 @@
+system,training,channel,eer_mean,eer_std,text
+LFCC + GMM,no augmentation,none,20.9115,,"20.91 [19.75, 22.09]"
+LFCC + GMM,no augmentation,tel8k,38.1519,,"38.15 [37.04, 39.46]"
+LFCC + GMM,no augmentation,g711,39.0000,,"39.00 [37.78, 40.24]"
+LFCC + GMM,no augmentation,gsm,43.9494,,"43.95 [42.65, 45.42]"
+LFCC + GMM,no augmentation,amr12k,42.1519,,"42.15 [40.86, 43.53]"
+LFCC + GMM,no augmentation,opus6k,41.6962,,"41.70 [40.40, 43.08]"
+LFCC + GMM,no augmentation,opus12k,24.2404,,"24.24 [23.08, 25.44]"
+LFCC + GMM,no augmentation,opus24k,24.3545,,"24.35 [23.24, 25.59]"
+LFCC + GMM,no augmentation,loss1,21.4936,,"21.49 [20.46, 22.65]"
+LFCC + GMM,no augmentation,loss5,25.7468,,"25.75 [24.65, 27.00]"
+LFCC + GMM,no augmentation,loss10,32.0000,,"32.00 [30.78, 33.20]"
+LFCC + LCNN,no augmentation,none,17.5190,1.8136,17.52 ± 1.81
+LFCC + LCNN,no augmentation,tel8k,32.2658,1.8038,32.27 ± 1.80
+LFCC + LCNN,no augmentation,g711,32.7637,1.3470,32.76 ± 1.35
+LFCC + LCNN,no augmentation,gsm,34.3417,2.0328,34.34 ± 2.03
+LFCC + LCNN,no augmentation,amr12k,34.0126,2.0980,34.01 ± 2.10
+LFCC + LCNN,no augmentation,opus6k,36.9874,3.2030,36.99 ± 3.20
+LFCC + LCNN,no augmentation,opus12k,28.4303,3.5777,28.43 ± 3.58
+LFCC + LCNN,no augmentation,opus24k,26.5021,2.2532,26.50 ± 2.25
+LFCC + LCNN,no augmentation,loss1,17.9113,1.8440,17.91 ± 1.84
+LFCC + LCNN,no augmentation,loss5,21.6118,2.0346,21.61 ± 2.03
+LFCC + LCNN,no augmentation,loss10,27.2321,1.7799,27.23 ± 1.78
+LFCC + LCNN,channel augmentation,none,19.1182,0.7952,19.12 ± 0.80
+LFCC + LCNN,channel augmentation,tel8k,25.0887,1.4261,25.09 ± 1.43
+LFCC + LCNN,channel augmentation,g711,25.4853,0.9793,25.49 ± 0.98
+LFCC + LCNN,channel augmentation,gsm,28.5528,1.8803,28.55 ± 1.88
+LFCC + LCNN,channel augmentation,amr12k,28.4135,1.6186,28.41 ± 1.62
+LFCC + LCNN,channel augmentation,opus6k,28.3966,1.1140,28.40 ± 1.11
+LFCC + LCNN,channel augmentation,opus12k,22.2701,0.9003,22.27 ± 0.90
+LFCC + LCNN,channel augmentation,opus24k,22.0675,1.0623,22.07 ± 1.06
+LFCC + LCNN,channel augmentation,loss1,19.2194,0.7996,19.22 ± 0.80
+LFCC + LCNN,channel augmentation,loss5,19.6835,0.8089,19.68 ± 0.81
+LFCC + LCNN,channel augmentation,loss10,20.6835,1.1356,20.68 ± 1.14
+wav2vec 2.0 + probe,no augmentation,none,7.8987,,"7.90 [7.16, 8.58]"
+wav2vec 2.0 + probe,no augmentation,tel8k,10.2532,,"10.25 [9.53, 11.00]"
+wav2vec 2.0 + probe,no augmentation,g711,9.7974,,"9.80 [9.09, 10.62]"
+wav2vec 2.0 + probe,no augmentation,gsm,14.2532,,"14.25 [13.25, 15.25]"
+wav2vec 2.0 + probe,no augmentation,amr12k,13.1897,,"13.19 [12.28, 13.95]"
+wav2vec 2.0 + probe,no augmentation,opus6k,19.6583,,"19.66 [18.67, 20.82]"
+wav2vec 2.0 + probe,no augmentation,opus12k,10.5442,,"10.54 [9.80, 11.34]"
+wav2vec 2.0 + probe,no augmentation,opus24k,8.7468,,"8.75 [8.10, 9.53]"
+wav2vec 2.0 + probe,no augmentation,loss1,9.0378,,"9.04 [8.30, 9.75]"
+wav2vec 2.0 + probe,no augmentation,loss5,11.7974,,"11.80 [10.76, 12.61]"
+wav2vec 2.0 + probe,no augmentation,loss10,13.0885,,"13.09 [12.22, 13.94]"
+wav2vec 2.0 + probe,channel augmentation,none,11.5442,,"11.54 [10.80, 12.39]"
+wav2vec 2.0 + probe,channel augmentation,tel8k,12.4429,,"12.44 [11.58, 13.29]"
+wav2vec 2.0 + probe,channel augmentation,g711,12.5442,,"12.54 [11.59, 13.34]"
+wav2vec 2.0 + probe,channel augmentation,gsm,14.6455,,"14.65 [13.66, 15.54]"
+wav2vec 2.0 + probe,channel augmentation,amr12k,13.3545,,"13.35 [12.46, 14.25]"
+wav2vec 2.0 + probe,channel augmentation,opus6k,17.1013,,"17.10 [16.14, 18.05]"
+wav2vec 2.0 + probe,channel augmentation,opus12k,13.1013,,"13.10 [12.08, 13.90]"
+wav2vec 2.0 + probe,channel augmentation,opus24k,12.2026,,"12.20 [11.35, 13.00]"
+wav2vec 2.0 + probe,channel augmentation,loss1,12.0000,,"12.00 [11.20, 12.78]"
+wav2vec 2.0 + probe,channel augmentation,loss5,13.7596,,"13.76 [12.72, 14.51]"
+wav2vec 2.0 + probe,channel augmentation,loss10,14.9622,,"14.96 [14.03, 15.81]"
+wav2vec 2.0 + MLP,no augmentation,none,8.7637,0.6825,8.76 ± 0.68
+wav2vec 2.0 + MLP,no augmentation,tel8k,12.0000,1.2473,12.00 ± 1.25
+wav2vec 2.0 + MLP,no augmentation,g711,12.8017,1.3740,12.80 ± 1.37
+wav2vec 2.0 + MLP,no augmentation,gsm,15.7130,1.6223,15.71 ± 1.62
+wav2vec 2.0 + MLP,no augmentation,amr12k,12.7848,1.1774,12.78 ± 1.18
+wav2vec 2.0 + MLP,no augmentation,opus6k,21.9156,2.4234,21.92 ± 2.42
+wav2vec 2.0 + MLP,no augmentation,opus12k,12.4135,1.0000,12.41 ± 1.00
+wav2vec 2.0 + MLP,no augmentation,opus24k,9.7511,0.7725,9.75 ± 0.77
+wav2vec 2.0 + MLP,no augmentation,loss1,10.4810,0.8667,10.48 ± 0.87
+wav2vec 2.0 + MLP,no augmentation,loss5,13.6835,1.2590,13.68 ± 1.26
+wav2vec 2.0 + MLP,no augmentation,loss10,17.2447,1.2644,17.24 ± 1.26
+wav2vec 2.0 + MLP,channel augmentation,none,12.4472,0.2251,12.45 ± 0.23
+wav2vec 2.0 + MLP,channel augmentation,tel8k,13.8566,0.9097,13.86 ± 0.91
+wav2vec 2.0 + MLP,channel augmentation,g711,14.2953,0.9467,14.30 ± 0.95
+wav2vec 2.0 + MLP,channel augmentation,gsm,15.0675,1.0879,15.07 ± 1.09
+wav2vec 2.0 + MLP,channel augmentation,amr12k,13.3165,0.8886,13.32 ± 0.89
+wav2vec 2.0 + MLP,channel augmentation,opus6k,17.0718,0.3764,17.07 ± 0.38
+wav2vec 2.0 + MLP,channel augmentation,opus12k,14.3797,0.3684,14.38 ± 0.37
+wav2vec 2.0 + MLP,channel augmentation,opus24k,13.0126,0.2372,13.01 ± 0.24
+wav2vec 2.0 + MLP,channel augmentation,loss1,12.8607,0.2217,12.86 ± 0.22
+wav2vec 2.0 + MLP,channel augmentation,loss5,14.3165,0.5056,14.32 ± 0.51
+wav2vec 2.0 + MLP,channel augmentation,loss10,15.8987,0.2195,15.90 ± 0.22

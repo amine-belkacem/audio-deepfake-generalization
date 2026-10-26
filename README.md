@@ -111,6 +111,32 @@ leading silence: 0.74 s for real voices, 0.04 s for spoofs.
 
 Details, the band study and the limits are in [docs/M4_shortcuts.md](docs/M4_shortcuts.md).
 
+### Milestone 5: what survives a phone line?
+
+The milestone 4 systems (trained without silence) through ten simulated channels: 8 kHz
+telephone band, G.711 (my implementation matches ffmpeg on every input), GSM, AMR-NB,
+Opus at 6/12/24 kbit/s and 1–10 % packet loss.
+
+![EER per channel](results/m5/channels_eer.png)
+
+| System | clean | 8 kHz | GSM | Opus 6k | loss 10 % | mean of the 10 channels |
+|---|---|---|---|---|---|---|
+| LFCC + GMM | 20.91 | 38.15 | 43.95 | 41.70 | 32.00 | 33.28 |
+| LFCC + LCNN | 17.52 | 32.27 | 34.34 | 36.99 | 27.23 | 29.21 |
+| LFCC + LCNN, channel augmentation | 19.12 | 25.09 | 28.55 | 28.40 | 20.68 | 23.99 |
+| wav2vec 2.0 + probe | **7.90** | 10.25 | 14.25 | 19.66 | 13.09 | **12.04** |
+| wav2vec 2.0 + probe, channel augmentation | 11.54 | 12.44 | 14.65 | 17.10 | 14.96 | 13.61 |
+
+- The LFCC systems collapse once the band is cut to 8 kHz; wav2vec 2.0 loses only 2.4
+  points there, consistent with its reliance on 0–1 kHz found in milestone 4.
+- Low-bitrate codecs (Opus 6k, GSM) are what hurts wav2vec 2.0.
+- Channel augmentation helps the LCNN, but not wav2vec 2.0: it flattens the curve and
+  raises the floor.
+- Real telephone channels (ASVspoof 2021 LA) are missing: their labels are only on
+  asvspoof.org, which was down (HTTP 503) during this milestone.
+
+Details in [docs/M5_channels.md](docs/M5_channels.md).
+
 | Milestone | Content | State |
 |---|---|---|
 | M0 | Foundations: metrics, protocols, tests, CI | done |
@@ -118,7 +144,7 @@ Details, the band study and the limits are in [docs/M4_shortcuts.md](docs/M4_sho
 | M2 | wav2vec 2.0 layer-wise probing | done |
 | M3 | Full comparison, 3 seeds, In-the-Wild | done |
 | M4 | Silence shortcut and frequency-band analysis | done |
-| M5 | Telephone-channel robustness | |
+| M5 | Telephone-channel robustness | done (simulated channels only, see below) |
 | M6 | Raspberry Pi 5 inference (optional) | |
 
 ## Running the tests

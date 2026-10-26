@@ -1,0 +1,91 @@
+{
+  "seed": 1,
+  "config": {
+    "epochs": 20,
+    "lr": 0.001,
+    "batch_size": 64,
+    "weight_decay": 0.0001,
+    "patience": 5,
+    "seed": 1
+  },
+  "best_epoch": 4,
+  "best_dev_eer": 0.11282826142794619,
+  "train_seconds": 1173.1720464960017,
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.6060170878152378,
+      "dev_eer": 0.14854735261662835,
+      "seconds": 130.59524640299787
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.3576206073428012,
+      "dev_eer": 0.13499360889507744,
+      "seconds": 130.194393466998
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.2643475030745,
+      "dev_eer": 0.17484750275865912,
+      "seconds": 130.1409249549979
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.22413610057226496,
+      "dev_eer": 0.11282826142794619,
+      "seconds": 130.10432464300175
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.18403955125502425,
+      "dev_eer": 0.11596790844349665,
+      "seconds": 130.18990586499785
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.15467647007874402,
+      "dev_eer": 0.15165336131140375,
+      "seconds": 130.3777126290006
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.1329602784028542,
+      "dev_eer": 0.1255410295276511,
+      "seconds": 130.5045131859988
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.11988136549814972,
+      "dev_eer": 0.11363559872901713,
+      "seconds": 130.4669202920013
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.11611247640267522,
+      "dev_eer": 0.12004664725043782,
+      "seconds": 130.57966319900152
+    }
+  ],
+  "device": "cuda",
+  "crop_frames": 400,
+  "train_part": [
+    "train_trim40",
+    "train_trim40-randchan"
+  ],
+  "dev_part": [
+    "dev_trim40",
+    "dev_trim40-randchan"
+  ],
+  "score_evalsub_trim40_seconds": 3.598454884999228,
+  "score_evalsub_trim40-tel8k_seconds": 3.6137449289999495,
+  "score_evalsub_trim40-g711_seconds": 3.5913406969993957,
+  "score_evalsub_trim40-gsm_seconds": 3.612783616001252,
+  "score_evalsub_trim40-amr12k_seconds": 3.6259466689989495,
+  "score_evalsub_trim40-opus6k_seconds": 3.604255029000342,
+  "score_evalsub_trim40-opus12k_seconds": 3.6097097000019858,
+  "score_evalsub_trim40-opus24k_seconds": 3.5909832210018067,
+  "score_evalsub_trim40-loss1_seconds": 3.5971485849986493,
+  "score_evalsub_trim40-loss5_seconds": 3.6167036020015075,
+  "score_evalsub_trim40-loss10_seconds": 3.5926699899973755
+}
